@@ -4,7 +4,14 @@ from mpl_toolkits.mplot3d import axes3d
 import math
 from gurobipy import *
 
-planesCoef = np.array([[0,0,1,0,0,5,0,5]])
+#planesCoef = np.array([[0,0,1,0,0,5,0,5]])
+
+planesCoef = np.array([[0,0,1,0,0,5,0,5],
+                       [0,0,1,-0.1,5,10,0,5],
+                       [0,0,1,-0.5,0,5,5,10],
+                       [0,0,1,-0.2,5,10,5,10]])
+R = planesCoef.shape[0]
+planes = np.array(range(R))
 
 model = Model('FootStep Planning')
 N = 100
@@ -15,15 +22,29 @@ footstepStatesUpperBounds = {}
 footstepStatesLowerBounds = {}
 footstepStates = model.addVars(steps,states,name="footstepStates")
 
-constr0 = model.addConstrs(planesCoef[0,0]*footstepStates[step,"x"]+planesCoef[0,1]*footstepStates[step,"y"]+planesCoef[0,2]*footstepStates[step,"z"]+planesCoef[0,3] == 0 for step in steps)
+footstepAssignment = model.addVars(steps,planes,name="footstepAssignment",vtype=GRB.BINARY)
 
-maxDistanceBetweenSteps = 0.2
+constOnePlane = model.addConstrs((quicksum(footstepAssignment[step,plane] for plane in planes) == 1 for step in steps),name='constOnePlane')
+
+constOnThePlane0 = model.addConstrs(( (footstepAssignment[step,plane]==1) >>(planesCoef[plane,0]*footstepStates[step,'x']+planesCoef[plane,1]*footstepStates[step,'y']+planesCoef[plane,2]*footstepStates[step,'z']+planesCoef[plane,3] == 0) 
+                                     for step in steps for plane in planes) ,name='constOnThePlane')
+constOnThePlane1 = model.addConstrs((footstepAssignment[step,plane]==1) >> (footstepStates[step,"x"] <= planesCoef[plane,5]) for step in steps for plane in planes)
+constOnThePlane2 = model.addConstrs((footstepAssignment[step,plane]==1) >> (footstepStates[step,"x"] >= planesCoef[plane,4]) for step in steps for plane in planes)
+constOnThePlane3 = model.addConstrs((footstepAssignment[step,plane]==1) >> (footstepStates[step,"y"] <= planesCoef[plane,7]) for step in steps for plane in planes)
+constOnThePlane4 = model.addConstrs((footstepAssignment[step,plane]==1) >> (footstepStates[step,"y"] >= planesCoef[plane,6]) for step in steps for plane in planes)
+
+# constr0 = model.addConstrs(planesCoef[0,0]*footstepStates[step,"x"]+planesCoef[0,1]*footstepStates[step,"y"]+planesCoef[0,2]*footstepStates[step,"z"]+planesCoef[0,3] == 0 for step in steps)
+
+maxDistanceBetweenSteps = 0.1
 model.addConstrs((footstepStates[step,state]-footstepStates[step-1,state] <= maxDistanceBetweenSteps for step in steps for state in states if step !=steps[0]),name="stepLimit")
 model.addConstrs((footstepStates[step,state]-footstepStates[step-1,state] >= -maxDistanceBetweenSteps for step in steps for state in states if step !=steps[0]),name="stepLimit")
 
 model.addConstrs(footstepStates[steps[0],state] <= maxDistanceBetweenSteps for state in states if state != states[-1])
-model.addConstrs(footstepStates[steps[-1],state]-5.0 <= maxDistanceBetweenSteps for state in states if state != states[-1] and state != states[-2])
-model.addConstrs(footstepStates[steps[-1],state]-5.0 >= -maxDistanceBetweenSteps for state in states if state != states[-1] and state != states[-2])
+model.addConstrs(footstepStates[steps[-1],state]-8.0 <= maxDistanceBetweenSteps for state in states if state != states[-1] and state != states[-2])
+model.addConstrs(footstepStates[steps[-1],state]-8.0 >= -maxDistanceBetweenSteps for state in states if state != states[-1] and state != states[-2])
+model.addConstrs(footstepStates[steps[-1],state]-8.0 <= maxDistanceBetweenSteps for state in states if state != states[-1] and state != states[-2])
+model.addConstrs(footstepStates[steps[-1],state]-8.0 >= -maxDistanceBetweenSteps for state in states if state != states[-1] and state != states[-2])
+
 model.addConstr(footstepStates[steps[0],states[-1]] == 0.0)
 model.addConstr(footstepStates[steps[-1],states[-1]] == 0.0)
 
