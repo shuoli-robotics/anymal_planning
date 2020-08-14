@@ -7,9 +7,21 @@ from gurobipy import *
 #planesCoef = np.array([[0,0,1,0,0,5,0,5]])
 
 planesCoef = np.array([[0,0,1,0,0,5,0,5],
-                       [0,0,1,-0.1,5,10,0,5],
-                       [0,0,1,-0.5,0,5,5,10],
-                       [0,0,1,-0.2,5,10,5,10]])
+                       [0,0,1,-0.1,5,10,3,8],
+                       [0,0,1,-0.3,0,5,10,15],
+                       [0,0,1,-0.2,5,10,8,13]])
+
+# fig = plt.figure()
+# ax = fig.gca(projection='3d')
+# ax.axis('auto')
+# for plane in range(planesCoef.shape[0]):
+#     x = np.linspace(planesCoef[plane,4],planesCoef[plane,5],100)
+#     y = np.linspace(planesCoef[plane,6],planesCoef[plane,7],100)
+#     X,Y = np.meshgrid(x,y)
+#     Z = ((-planesCoef[plane,0]*X-planesCoef[plane,1]*Y)-planesCoef[plane,3])/planesCoef[plane,2]
+#     surf = ax.plot_surface(X, Y, Z)
+# plt.show()
+
 R = planesCoef.shape[0]
 planes = np.array(range(R))
 
@@ -35,15 +47,18 @@ constOnThePlane4 = model.addConstrs((footstepAssignment[step,plane]==1) >> (foot
 
 # constr0 = model.addConstrs(planesCoef[0,0]*footstepStates[step,"x"]+planesCoef[0,1]*footstepStates[step,"y"]+planesCoef[0,2]*footstepStates[step,"z"]+planesCoef[0,3] == 0 for step in steps)
 
-maxDistanceBetweenSteps = 0.1
+maxDistanceBetweenSteps = 0.2
 model.addConstrs((footstepStates[step,state]-footstepStates[step-1,state] <= maxDistanceBetweenSteps for step in steps for state in states if step !=steps[0]),name="stepLimit")
 model.addConstrs((footstepStates[step,state]-footstepStates[step-1,state] >= -maxDistanceBetweenSteps for step in steps for state in states if step !=steps[0]),name="stepLimit")
 
 model.addConstrs(footstepStates[steps[0],state] <= maxDistanceBetweenSteps for state in states if state != states[-1])
-model.addConstrs(footstepStates[steps[-1],state]-8.0 <= maxDistanceBetweenSteps for state in states if state != states[-1] and state != states[-2])
-model.addConstrs(footstepStates[steps[-1],state]-8.0 >= -maxDistanceBetweenSteps for state in states if state != states[-1] and state != states[-2])
-model.addConstrs(footstepStates[steps[-1],state]-8.0 <= maxDistanceBetweenSteps for state in states if state != states[-1] and state != states[-2])
-model.addConstrs(footstepStates[steps[-1],state]-8.0 >= -maxDistanceBetweenSteps for state in states if state != states[-1] and state != states[-2])
+model.addConstr(footstepStates[steps[-1],states[0]]-2.0 <= maxDistanceBetweenSteps)
+model.addConstr(footstepStates[steps[-1],states[0]]-2.0 >= -maxDistanceBetweenSteps)
+model.addConstr(footstepStates[steps[-1],states[1]]-12.0 <= maxDistanceBetweenSteps)
+model.addConstr(footstepStates[steps[-1],states[1]]-12.0 >= -maxDistanceBetweenSteps)
+
+# model.addConstrs(footstepStates[steps[-1],state]-8.0 <= maxDistanceBetweenSteps for state in states if state != states[-1] and state != states[-2])
+# model.addConstrs(footstepStates[steps[-1],state]-8.0 >= -maxDistanceBetweenSteps for state in states if state != states[-1] and state != states[-2])
 
 model.addConstr(footstepStates[steps[0],states[-1]] == 0.0)
 model.addConstr(footstepStates[steps[-1],states[-1]] == 0.0)
