@@ -7,7 +7,10 @@ from gurobipy import *
 
 class AnyPlanner:
     def __init__(self):
-        self.terrain = at.Terrain(1)
+        
+        self.fig = plt.figure(1)
+        self.ax = self.fig.gca(projection='3d')
+        self.terrain = at.Terrain(self.ax,0)
         self.initialPoint = [0.0,0.0]
         self.targetPoint = [2.0,18.0]
         
@@ -65,14 +68,31 @@ class AnyPlanner:
                 optimalFootstep[1,solu[0]] = solutions[solu]
             elif solu[1] == 'z':
                 optimalFootstep[2,solu[0]] = solutions[solu]
-        self.terrain.ax.scatter(optimalFootstep[0,:],optimalFootstep[1,:],optimalFootstep[2,:])
+        self.ax.scatter(optimalFootstep[0,:],optimalFootstep[1,:],optimalFootstep[2,:])
+        self.set_axes_equal()
         
+    def set_axes_equal(self):
+        x_limits = self.ax.get_xlim3d()
+        y_limits = self.ax.get_ylim3d()
+        z_limits = self.ax.get_zlim3d()
+
+        x_range = abs(x_limits[1] - x_limits[0])
+        x_middle = np.mean(x_limits)
+        y_range = abs(y_limits[1] - y_limits[0])
+        y_middle = np.mean(y_limits)
+        z_range = abs(z_limits[1] - z_limits[0])
+        z_middle = np.mean(z_limits)
+        plot_radius = 0.5*max([x_range, y_range, z_range])
+
+        self.ax.set_xlim3d([x_middle - plot_radius, x_middle + plot_radius])
+        self.ax.set_ylim3d([y_middle - plot_radius, y_middle + plot_radius])
+        self.ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
         plt.show()
-        
         
 
 
 if __name__ == "__main__":
     anyPlanner = AnyPlanner()  
     anyPlanner.planFootsteps()
+    anyPlanner.set_axes_equal()
         
