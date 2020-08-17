@@ -13,7 +13,7 @@ class Terrain:
             groundLength = 10.0
             secondGroundHeight = 3.0
             lowCovariance = 0.1
-            highCovariance = 1.0
+            highCovariance = 100.0
             horizontalPlanes = np.array([[0.0,  0.0,  1.0,  0.0,                         0.0,                  groundLength,     0.0,                          groundLength/2,   lowCovariance],
                                         [0.0,  0.0,  1.0,  -secondGroundHeight,        0.0,                  groundLength,     groundLength,               groundLength*2,       lowCovariance]]) 
             

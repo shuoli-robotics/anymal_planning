@@ -33,8 +33,7 @@ class AnyPlanner:
 
         footstepAssignment = model.addVars(steps,footIds,planes,name="footstepAssignment",vtype=GRB.BINARY)
 
-        footstepObjective = model.addVar()
-
+        footstepNumber= model.addVars(steps,footIds,name="footstepNumber",vtype=GRB.INTEGER,lb=1,ub=3)
 
         # Assign each foothold on one plane
         constOnePlane = model.addConstrs((quicksum(footstepAssignment[step,footId,plane] for plane in planes) == 1 for step in steps for footId in footIds),name='constOnePlane')
@@ -84,13 +83,25 @@ class AnyPlanner:
 
 
         # set objective
+        # y = k**gamma function is linearize around gamma = 2 as y = a(x-2) + b
+        k = 0.5
+        a = k**2*math.log(k)
+        b = k**2
         
-        obj = quicksum((footstepStates[step,footId,states[0]]-footstepStates[step-1,footId,states[0]])*(footstepStates[step,footId,states[0]]-footstepStates[step-1,footId,states[0]])+(footstepStates[step,footId,states[1]]-footstepStates[step-1,footId,states[1]])*(footstepStates[step,footId,states[1]]-footstepStates[step-1,footId,states[1]])
-              for step in steps for footId in footIds if step != steps[0])
+        # Set weights for each components
+
+        P = 1
+        Q = 10000 
+        R = 0
+        
+        obj = P * quicksum((footstepStates[step,footId,states[0]]-footstepStates[step-1,footId,states[0]])*(footstepStates[step,footId,states[0]]-footstepStates[step-1,footId,states[0]])
+                +(footstepStates[step,footId,states[1]]-footstepStates[step-1,footId,states[1]])*(footstepStates[step,footId,states[1]]-footstepStates[step-1,footId,states[1]])
+              for step in steps for footId in footIds if step != steps[0]) + Q * quicksum(footstepAssignment[step,footId,plane] * planesCoef[plane,8]*(a *(footstepNumber[step,footId]-2)+b) for step in steps for footId in footIds for plane in planes) + R * quicksum(footstepNumber[step,footId] for step in steps for footId in footIds)
         model.setObjective(obj, GRB.MINIMIZE)
         model.optimize()
         
         self.solutions = model.getAttr('x', footstepStates)
+        self.stepNumber = model.getAttr('x', footstepNumber)
         optimalFootstepLF,optimalFootstepRF,optimalFootstepLH,optimalFootstepRH = self.getOptimalResults()
 
         self.ax.scatter(optimalFootstepLF[0,:],optimalFootstepLF[1,:],optimalFootstepLF[2,:],color = 'white')
@@ -141,7 +152,7 @@ class AnyPlanner:
                     optimalFootstepRH[2,solu[0]] = self.solutions[solu]
         return (optimalFootstepLF,optimalFootstepRF,optimalFootstepLH,optimalFootstepRH)
 
-        
+
     def set_axes_equal(self):
         x_limits = self.ax.get_xlim3d()
         y_limits = self.ax.get_ylim3d()
