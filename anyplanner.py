@@ -13,6 +13,8 @@ class AnyPlanner:
         self.terrain = at.Terrain(self.ax,0)
         self.initialPoint = [0.0,0.0]
         self.targetPoint = [2.0,18.0]
+        self.solutions = {}
+        self.N = 50
         
     def planFootsteps(self):
         planesCoef = self.terrain.terrainPlanes
@@ -21,8 +23,7 @@ class AnyPlanner:
         planes = np.array(range(R))
 
         model = Model('FootStep Planning')
-        N = 50
-        steps = [i for i in range(N)]
+        steps = [i for i in range(self.N)]
         footIds = ['LF','RF','LH','RH']
         states = ["x","y","z","theta"]
         footstepStatesUpperBounds = {}
@@ -31,6 +32,8 @@ class AnyPlanner:
         footstepStates = model.addVars(steps,footIds,states,name="footstepStates")
 
         footstepAssignment = model.addVars(steps,footIds,planes,name="footstepAssignment",vtype=GRB.BINARY)
+
+        footstepObjective = model.addVar()
 
 
         # Assign each foothold on one plane
@@ -49,10 +52,10 @@ class AnyPlanner:
         model.addConstrs((footstepStates[step,footId,state]-footstepStates[step-1,footId,state] >= -maxDistanceBetweenSteps for step in steps for footId in footIds for state in states if step !=steps[0]),name="stepLimit")
 
         # Limit the distance between the legs for each step
-        minDistanceBetweenLeftAndRight = 0.1
-        maxDistanceBetweenLeftAndRight = 0.2
-        minDistanceBetweenFrontAndHind= 0.2
-        maxDistanceBetweenFrontAndHind= 0.6
+        minDistanceBetweenLeftAndRight = 0.2
+        maxDistanceBetweenLeftAndRight = 0.4
+        minDistanceBetweenFrontAndHind= 0.3
+        maxDistanceBetweenFrontAndHind= 0.8
         model.addConstrs((footstepStates[step,footIds[1],"x"] - footstepStates[step,footIds[0],"x"] >= minDistanceBetweenLeftAndRight for step in steps), name = "RF limit")
         model.addConstrs((footstepStates[step,footIds[1],"x"] - footstepStates[step,footIds[0],"x"] <=  maxDistanceBetweenLeftAndRight for step in steps), name = "RF limit")
         model.addConstrs((footstepStates[step,footIds[1],"y"] - footstepStates[step,footIds[0],"y"] >= -maxDistanceBetweenLeftAndRight for step in steps), name = "RF limit")
@@ -78,53 +81,17 @@ class AnyPlanner:
         model.addConstrs(footstepStates[steps[-1],footId,states[1]]-self.targetPoint[1] >= -maxDistanceBetweenSteps for footId in footIds)
         model.addConstrs(footstepStates[steps[0],footId,states[-1]] == 0.0 for footId in footIds)
         model.addConstrs(footstepStates[steps[-1],footId,states[-1]] == 0.0 for footId in footIds)
+
+
+        # set objective
         
         obj = quicksum((footstepStates[step,footId,states[0]]-footstepStates[step-1,footId,states[0]])*(footstepStates[step,footId,states[0]]-footstepStates[step-1,footId,states[0]])+(footstepStates[step,footId,states[1]]-footstepStates[step-1,footId,states[1]])*(footstepStates[step,footId,states[1]]-footstepStates[step-1,footId,states[1]])
               for step in steps for footId in footIds if step != steps[0])
         model.setObjective(obj, GRB.MINIMIZE)
         model.optimize()
         
-        optimalFootstepLF = np.zeros((3,N))
-        optimalFootstepRF = np.zeros((3,N))
-        optimalFootstepLH = np.zeros((3,N))
-        optimalFootstepRH = np.zeros((3,N))
-        solutions = model.getAttr('x', footstepStates)
-
-        print(solutions)
-        for solu in solutions:
-            if solu[1] == 'LF':
-                if solu[2] == 'x':
-                    optimalFootstepLF[0,solu[0]] = solutions[solu]
-                elif solu[2] == 'y':
-                    optimalFootstepLF[1,solu[0]] = solutions[solu]
-                elif solu[2] == 'z':
-                    optimalFootstepLF[2,solu[0]] = solutions[solu]
-            elif solu[1] == 'RF':
-                if solu[2] == 'x':
-                    optimalFootstepRF[0,solu[0]] = solutions[solu]
-                elif solu[2] == 'y':
-                    optimalFootstepRF[1,solu[0]] = solutions[solu]
-                elif solu[2] == 'z':
-                    optimalFootstepRF[2,solu[0]] = solutions[solu]
-            elif solu[1] == 'LH':
-                if solu[2] == 'x':
-                    optimalFootstepLH[0,solu[0]] = solutions[solu]
-                elif solu[2] == 'y':
-                    optimalFootstepLH[1,solu[0]] = solutions[solu]
-                elif solu[2] == 'z':
-                    optimalFootstepLH[2,solu[0]] = solutions[solu]
-            elif solu[1] == 'RH':
-                if solu[2] == 'x':
-                    optimalFootstepRH[0,solu[0]] = solutions[solu]
-                elif solu[2] == 'y':
-                    optimalFootstepRH[1,solu[0]] = solutions[solu]
-                elif solu[2] == 'z':
-                    optimalFootstepRH[2,solu[0]] = solutions[solu]
-
-        print(optimalFootstepLF[:,0:5])
-        print(optimalFootstepRF[:,0:5])
-        print(optimalFootstepLH[:,0:5])
-        print(optimalFootstepRH[:,0:5])
+        self.solutions = model.getAttr('x', footstepStates)
+        optimalFootstepLF,optimalFootstepRF,optimalFootstepLH,optimalFootstepRH = self.getOptimalResults()
 
         self.ax.scatter(optimalFootstepLF[0,:],optimalFootstepLF[1,:],optimalFootstepLF[2,:],color = 'white')
         self.ax.scatter(optimalFootstepRF[0,:],optimalFootstepRF[1,:],optimalFootstepRF[2,:],color = 'red')
@@ -135,6 +102,45 @@ class AnyPlanner:
         self.ax.set_ylim([0,20])
         self.ax.set_zlim([0,5])
         #self.set_axes_equal()
+
+    def getOptimalResults(self):
+
+        optimalFootstepLF = np.zeros((3,self.N))
+        optimalFootstepRF = np.zeros((3,self.N))
+        optimalFootstepLH = np.zeros((3,self.N))
+        optimalFootstepRH = np.zeros((3,self.N))
+
+        for solu in self.solutions:
+            if solu[1] == 'LF':
+                if solu[2] == 'x':
+                    optimalFootstepLF[0,solu[0]] = self.solutions[solu]
+                elif solu[2] == 'y':
+                    optimalFootstepLF[1,solu[0]] = self.solutions[solu]
+                elif solu[2] == 'z':
+                    optimalFootstepLF[2,solu[0]] = self.solutions[solu]
+            elif solu[1] == 'RF':
+                if solu[2] == 'x':
+                    optimalFootstepRF[0,solu[0]] = self.solutions[solu]
+                elif solu[2] == 'y':
+                    optimalFootstepRF[1,solu[0]] = self.solutions[solu]
+                elif solu[2] == 'z':
+                    optimalFootstepRF[2,solu[0]] = self.solutions[solu]
+            elif solu[1] == 'LH':
+                if solu[2] == 'x':
+                    optimalFootstepLH[0,solu[0]] = self.solutions[solu]
+                elif solu[2] == 'y':
+                    optimalFootstepLH[1,solu[0]] = self.solutions[solu]
+                elif solu[2] == 'z':
+                    optimalFootstepLH[2,solu[0]] = self.solutions[solu]
+            elif solu[1] == 'RH':
+                if solu[2] == 'x':
+                    optimalFootstepRH[0,solu[0]] = self.solutions[solu]
+                elif solu[2] == 'y':
+                    optimalFootstepRH[1,solu[0]] = self.solutions[solu]
+                elif solu[2] == 'z':
+                    optimalFootstepRH[2,solu[0]] = self.solutions[solu]
+        return (optimalFootstepLF,optimalFootstepRF,optimalFootstepLH,optimalFootstepRH)
+
         
     def set_axes_equal(self):
         x_limits = self.ax.get_xlim3d()

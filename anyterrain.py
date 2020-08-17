@@ -12,17 +12,19 @@ class Terrain:
         if terrainNum == 0:
             groundLength = 10.0
             secondGroundHeight = 3.0
-            horizontalPlanes = np.array([[0.0,  0.0,  1.0,  0.0,                         0.0,                  groundLength,     0.0,                          groundLength/2],
-                                        [0.0,  0.0,  1.0,  -secondGroundHeight,        0.0,                  groundLength,     groundLength,               groundLength*2]]) 
+            lowCovariance = 0.1
+            highCovariance = 1.0
+            horizontalPlanes = np.array([[0.0,  0.0,  1.0,  0.0,                         0.0,                  groundLength,     0.0,                          groundLength/2,   lowCovariance],
+                                        [0.0,  0.0,  1.0,  -secondGroundHeight,        0.0,                  groundLength,     groundLength,               groundLength*2,       lowCovariance]]) 
             
             firstStepPoint = [1.0,5.0,0.0]
             stepsNum = 15
             stepHight = secondGroundHeight/stepsNum
             stepLength = 2
             stepWidth = (groundLength - firstStepPoint[1])/stepsNum   
-            levelSteps = np.zeros((stepsNum,8))
+            levelSteps = np.zeros((stepsNum,9))
             for i in range(stepsNum-1):
-                levelSteps[i,:] = np.array([0.0,  0.0,  1.0, -(i+1)*stepHight,   firstStepPoint[0],   firstStepPoint[0]+stepLength,  firstStepPoint[1]+i*stepWidth, firstStepPoint[1]+(i+1)*stepWidth]) 
+                levelSteps[i,:] = np.array([0.0,  0.0,  1.0, -(i+1)*stepHight,   firstStepPoint[0],   firstStepPoint[0]+stepLength,  firstStepPoint[1]+i*stepWidth, firstStepPoint[1]+(i+1)*stepWidth, highCovariance]) 
             horizontalPlanes = np.concatenate((horizontalPlanes, levelSteps), axis=0) 
             
             firstSlopePoint = [7.0,5.0,0.0]
@@ -34,13 +36,12 @@ class Terrain:
         
             slopeCoefficients = self.calculatePlaneCoefficient(slopeControlPoints)
             slopeLimit = np.array([firstSlopePoint[0],firstSlopePoint[0]+stepLength,firstSlopePoint[1],groundLength])
-            # print(slopeCoefficients)
             # print(slopeLimit)
             slopeCoefficients = np.append(slopeCoefficients,slopeLimit)
+            slopeCoefficients = np.append(slopeCoefficients,np.array([lowCovariance]))
+            #print(slopeCoefficients)
             slopeCoefficients = np.array([slopeCoefficients])
             
-            print(horizontalPlanes.shape)
-            print(slopeCoefficients.shape)
             terrainPlanes = np.concatenate((horizontalPlanes,slopeCoefficients))
             
             self.plotPlanes(ax,terrainPlanes)
@@ -74,4 +75,7 @@ class Terrain:
             
 
 if __name__ == "__main__":
-    tr = Terrain(figNum = 1)  
+    fig = plt.figure(1)
+    ax = fig.gca(projection='3d')
+    tr = Terrain(ax,0)  
+    plt.show()
