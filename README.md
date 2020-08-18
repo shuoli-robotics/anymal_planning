@@ -3,7 +3,7 @@
  
     git clone https://github.com/shuoli-robotics/anymal_planning.git
  
- 2. Create a packed conda environment by
+ 2. Go to the directory and create a packed conda environment by
  
     conda env create -f footholdPlanning.yml
  
