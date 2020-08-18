@@ -1,4 +1,4 @@
-name: foodholdPlanning-shuo 
+name: footholdPlanning-shuo 
 channels:
   - gurobi
   - conda-forge 
