@@ -15,6 +15,7 @@ class AnyPlanner:
         self.targetPoint = [2.0,18.0]
         self.solutions = {}
         self.N = 50
+        print(self.terrain)
         
     def planFootsteps(self):
         planesCoef = self.terrain.terrainPlanes
@@ -33,7 +34,8 @@ class AnyPlanner:
 
         footstepAssignment = model.addVars(steps,footIds,planes,name="footstepAssignment",vtype=GRB.BINARY)
 
-        footstepNumber= model.addVars(steps,footIds,name="footstepNumber",vtype=GRB.INTEGER,lb=1,ub=3)
+        footstepStrength = model.addVars(steps,footIds,name = "footstepStrength")
+
 
         # Assign each foothold on one plane
         constOnePlane = model.addConstrs((quicksum(footstepAssignment[step,footId,plane] for plane in planes) == 1 for step in steps for footId in footIds),name='constOnePlane')
@@ -71,37 +73,38 @@ class AnyPlanner:
         model.addConstrs((footstepStates[step,footIds[1],"y"] - footstepStates[step,footIds[3],"y"] <=  maxDistanceBetweenFrontAndHind for step in steps), name = "RH limit")
         model.addConstrs((footstepStates[step,footIds[1],"y"] - footstepStates[step,footIds[3],"y"] >=  minDistanceBetweenFrontAndHind for step in steps), name = "RH limit")
 
+        # Limit touching strength
+        #model.addConstrs((footstepStrength[step,footId] <=  1.0 for step in steps for footId in footIds))
+        model.addConstrs((footstepStrength[step,footId] ==  0.0 for step in steps for footId in footIds))
+
+
 
         # Initial states and final states
-        model.addConstrs(footstepStates[steps[0],footId,state] <= maxDistanceBetweenSteps for state in states for footId in footIds if state != states[-1])
+        model.addConstrs(footstepStates[steps[0],footId,state] <= maxDistanceBetweenSteps for state in states for footId in footIds if state == states[0] or state == states[1])
         model.addConstrs(footstepStates[steps[-1],footId,states[0]]-self.targetPoint[0] <= maxDistanceBetweenSteps for footId in footIds)
         model.addConstrs(footstepStates[steps[-1],footId,states[0]]-self.targetPoint[0] >= -maxDistanceBetweenSteps for footId in footIds)
         model.addConstrs(footstepStates[steps[-1],footId,states[1]]-self.targetPoint[1] <= maxDistanceBetweenSteps for footId in footIds)
         model.addConstrs(footstepStates[steps[-1],footId,states[1]]-self.targetPoint[1] >= -maxDistanceBetweenSteps for footId in footIds)
-        model.addConstrs(footstepStates[steps[0],footId,states[-1]] == 0.0 for footId in footIds)
-        model.addConstrs(footstepStates[steps[-1],footId,states[-1]] == 0.0 for footId in footIds)
+        model.addConstrs(footstepStates[steps[0],footId,states[3]] == 0.0 for footId in footIds)
+        model.addConstrs(footstepStates[steps[-1],footId,states[3]] == 0.0 for footId in footIds)
 
-
-        # set objective
-        # y = k**gamma function is linearize around gamma = 2 as y = a(x-2) + b
-        k = 0.5
-        a = k**2*math.log(k)
-        b = k**2
-        
         # Set weights for each components
 
         P = 1
-        Q = 10000 
-        R = 0
+        Q = 100
+        R = 0 
         
         obj = P * quicksum((footstepStates[step,footId,states[0]]-footstepStates[step-1,footId,states[0]])*(footstepStates[step,footId,states[0]]-footstepStates[step-1,footId,states[0]])
                 +(footstepStates[step,footId,states[1]]-footstepStates[step-1,footId,states[1]])*(footstepStates[step,footId,states[1]]-footstepStates[step-1,footId,states[1]])
-              for step in steps for footId in footIds if step != steps[0]) + Q * quicksum(footstepAssignment[step,footId,plane] * planesCoef[plane,8]*(a *(footstepNumber[step,footId]-2)+b) for step in steps for footId in footIds for plane in planes) + R * quicksum(footstepNumber[step,footId] for step in steps for footId in footIds)
+              for step in steps for footId in footIds if step != steps[0]) + Q * quicksum(footstepAssignment[step,footId,plane]*planesCoef[plane,8]*(1-footstepStrength[step,footId]) for step in steps for footId in footIds for plane in planes)+ R * quicksum(footstepStrength[step,footId] for step in steps for footId in footIds) 
+
         model.setObjective(obj, GRB.MINIMIZE)
         model.optimize()
         
+        #+ 5.0 * quicksum(footstepAssignment[step,footId,plane]*planesCoef[plane,8]*footstepStates[step,footId,"touchingStrength"] for step in steps for footId in footIds for plane in planes)
         self.solutions = model.getAttr('x', footstepStates)
-        self.stepNumber = model.getAttr('x', footstepNumber)
+        self.stepStrength = model.getAttr('x', footstepStrength)
+        print(self.stepStrength)
         optimalFootstepLF,optimalFootstepRF,optimalFootstepLH,optimalFootstepRH = self.getOptimalResults()
 
         self.ax.scatter(optimalFootstepLF[0,:],optimalFootstepLF[1,:],optimalFootstepLF[2,:],color = 'white')
