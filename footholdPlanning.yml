@@ -7,3 +7,4 @@ dependencies:
   - numpy=1.18.*
   - gurobi=9.0.* 
   - matplotlib=3.3.0 
+  - ipykernel=5.3.* 
