@@ -8,3 +8,4 @@ dependencies:
   - gurobi=9.0.* 
   - matplotlib=3.3.0 
   - ipykernel=5.3.* 
+  - nb_conda=2.2.* 
