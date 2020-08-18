@@ -11,7 +11,7 @@
  
  3. Activate the environment and run the notebook by
  
-    conda acticate footholdPlanning-shuo
+    conda activate footholdPlanning-shuo
     
     jupyter notebook
     
