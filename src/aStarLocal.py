@@ -1,4 +1,3 @@
-import logging
 import sys
 import os
 import numpy as np
@@ -8,6 +7,7 @@ from mpl_toolkits.mplot3d import axes3d
 import math
 import anyterrain as at
 import time
+import logging
 
 
 class Point:
@@ -39,7 +39,7 @@ class AnymalStateNode:
 
 
 
-class AnymalAStar:
+class AnymalAStarLocal:
     def __init__(self,start,goal):
         self.terrain = at.Terrain(plt.figure(100).gca(projection='3d'),0)
         self.pointCloud = self.generatePointCloud()
@@ -67,10 +67,11 @@ class AnymalAStar:
         self.k_sigma_true = 0.1
         self.k_sigma_false = 0.9 # 0.1
         
+        # logging.basicConfig(level=logging.INFO,%(message)s',filename='anyplan.log')
         self.logger = logging.getLogger('anyplanLogger')
         self.logger.setLevel(logging.INFO)
-        fh = logging.FileHandler('./anyplan.log')
-        # fh.setLevel(logging.INFO)
+        fh = logging.FileHandler('anyplan.log')
+        fh.setLevel(logging.INFO)
         formatter = logging.Formatter('%(message)s')
         fh.setFormatter(formatter)
         self.logger.addHandler(fh)
@@ -580,7 +581,7 @@ if __name__ == "__main__":
     start = (2.0,4.0,3.14/2)
     goal = (2.0,18.0,3.14/2)
 
-    anyAStar = AnymalAStar(start,goal)
+    anyAStar = AnymalAStarLocal(start,goal)
     time_start=time.time()
     isAstarSuccess = anyAStar.run()
     time_end=time.time()
