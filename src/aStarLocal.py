@@ -40,8 +40,8 @@ class AnymalStateNode:
 
 
 class AnymalAStarLocal:
-    def __init__(self,start,goal):
-        self.terrain = at.Terrain(0)
+    def __init__(self,start,goal,terrain):
+        self.terrain = terrain
         self.pointCloud = self.generatePointCloud()
         self.bodyLength = 1.5
         self.bodyWidth = 0.3
@@ -579,8 +579,9 @@ if __name__ == "__main__":
     # From start to end
     start = (2.0,4.0,3.14/2)
     goal = (2.0,18.0,3.14/2)
+    terrain = at.Terrain(0)
 
-    anyAStar = AnymalAStarLocal(start,goal)
+    anyAStar = AnymalAStarLocal(start,goal,terrain)
     time_start=time.time()
     isAstarSuccess = anyAStar.run()
     time_end=time.time()
