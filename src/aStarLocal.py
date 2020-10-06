@@ -41,7 +41,7 @@ class AnymalStateNode:
 
 class AnymalAStarLocal:
     def __init__(self,start,goal):
-        self.terrain = at.Terrain(plt.figure(100).gca(projection='3d'),0)
+        self.terrain = at.Terrain(0)
         self.pointCloud = self.generatePointCloud()
         self.bodyLength = 1.5
         self.bodyWidth = 0.3
@@ -550,7 +550,7 @@ class AnymalAStarLocal:
         fig = plt.figure(figNum)
         ax = fig.gca(projection='3d')
 
-        self.terrain.plotPlanes(ax,self.terrain.terrainPlanes)
+        self.terrain.plotPlanes(ax)
 
         ax.scatter(optimalPathOneTouchArray[0,0:pointerOneTouch],optimalPathOneTouchArray[1,0:pointerOneTouch],optimalPathOneTouchArray[2,0:pointerOneTouch],color = 'red',s=40)
         ax.scatter(optimalPathDoubleTouchArray[0,0:pointerDoubleTouch],optimalPathDoubleTouchArray[1,0:pointerDoubleTouch],optimalPathDoubleTouchArray[2,0:pointerDoubleTouch],color = 'green',s=40)
@@ -559,7 +559,6 @@ class AnymalAStarLocal:
         ax.set_xlim([0,10])
         ax.set_ylim([0,20])
         ax.set_zlim([0,5])
-        plt.show()
         
     def plotSearchProgress(self,figNum):
         searchedPoints = np.zeros((3,len(self.closedList)))
@@ -573,7 +572,7 @@ class AnymalAStarLocal:
         fig = plt.figure(figNum)
         ax = fig.gca(projection='3d')
 
-        self.terrain.plotPlanes(ax,self.terrain.terrainPlanes)
+        self.terrain.plotPlanes(ax)
         ax.scatter(searchedPoints[0,:],searchedPoints[1,:],searchedPoints[2,:])
 
 if __name__ == "__main__":
@@ -588,9 +587,7 @@ if __name__ == "__main__":
     
     print('A* Time:',time_end-time_start,'s')
 
-    # anyAStar.plotSearchProgress(3)
-
-
-
-    # anyAStar.plotOptimalPath(2)
+    anyAStar.plotSearchProgress(3)
+    anyAStar.plotOptimalPath(2)
+    plt.show()
 

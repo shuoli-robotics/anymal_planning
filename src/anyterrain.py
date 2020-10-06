@@ -9,10 +9,7 @@ class Point:
         self.sigma = sigma
 
 class Terrain:
-    def __init__(self,ax,terrainNum):
-        self.terrainPlanes = self.createTerrian(ax,terrainNum)
-
-    def createTerrian(self,ax,terrainNum):
+    def __init__(self,terrainNum):
         if terrainNum == 0:
             groundLength = 10.0
             secondGroundHeight = 3.0
@@ -46,14 +43,9 @@ class Terrain:
             #print(slopeCoefficients)
             slopeCoefficients = np.array([slopeCoefficients])
             
-            terrainPlanes = np.concatenate((horizontalPlanes,slopeCoefficients))
-            
-            self.plotPlanes(ax,terrainPlanes)
-            
-            return(terrainPlanes)
+            self.terrainPlanes = np.concatenate((horizontalPlanes,slopeCoefficients))
         else:
             print("Establish Terrain Failed")
-            
                
     def calculatePlaneCoefficient(self,controlPoints):
         A = controlPoints[0,:]
@@ -65,12 +57,12 @@ class Terrain:
         coefficient = np.append(n,d)
         return coefficient
     
-    def plotPlanes(self,ax,coefficients):
-        for plane in range(coefficients.shape[0]):
-            x = np.linspace(coefficients[plane,4],coefficients[plane,5],100)
-            y = np.linspace(coefficients[plane,6],coefficients[plane,7],100)
+    def plotPlanes(self,ax):
+        for plane in range(self.terrainPlanes.shape[0]):
+            x = np.linspace(self.terrainPlanes[plane,4],self.terrainPlanes[plane,5],100)
+            y = np.linspace(self.terrainPlanes[plane,6],self.terrainPlanes[plane,7],100)
             X,Y = np.meshgrid(x,y)
-            Z = ((-coefficients[plane,0]*X-coefficients[plane,1]*Y)-coefficients[plane,3])/coefficients[plane,2]
+            Z = ((-self.terrainPlanes[plane,0]*X-self.terrainPlanes[plane,1]*Y)-self.terrainPlanes[plane,3])/self.terrainPlanes[plane,2]
             surf = ax.plot_surface(X, Y, Z,color = [0.3,0.3,0.3])
     
             
@@ -81,5 +73,5 @@ class Terrain:
 if __name__ == "__main__":
     fig = plt.figure(1)
     ax = fig.gca(projection='3d')
-    tr = Terrain(ax,0)  
-    plt.show()
+    tr = Terrain(0)
+    tr.plotPlanes(ax)  
