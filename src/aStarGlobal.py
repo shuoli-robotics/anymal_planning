@@ -42,7 +42,7 @@ class AnymalAStarGlobal:
         
         self.k_d_false = 1.0
         self.k_d_true = 2.0 #0.5
-        self.k_h = 9.0
+        self.k_h = 2.0
         self.k_sigma_true = 0.1
         self.k_sigma_false = 0.9 # 0.1
         
@@ -123,7 +123,7 @@ class AnymalAStarGlobal:
     # the node and the goal. In theory, it should be less than the real distance which can help A* 
     # converge to the optimal result
     def getH(self,node):
-        return math.sqrt((node[0] - self.goal[0])**2 + (node[1] - self.goal[1])**2)
+        return math.sqrt((node[0] - self.goal[0])**2 + (node[1] - self.goal[1])**2) * self.k_h
     
     
     # This function finds the node with minumum score in the open list
