@@ -163,17 +163,22 @@ class AnymalAStarGlobal:
             print("Warning!! invalid action")
         return self.closedList[parent].g + value
     
-    def getOptimalPath(self):
+    # This function returns the optimal path from the start to the goal. Also, It returns the point of the path.
+    # localTargetRatio: The position of the wanted point.
+    #  1 --- start 
+    #  0 --- goal  
+    def getOptimalPath(self,localTargetRatio):
         parent = self.goal
         optimalPath = [parent]
         while parent != self.start:
             parent = self.closedList[parent].parent
             optimalPath.append(parent)
-        return optimalPath
+        localTarget = optimalPath[round(len(optimalPath)*localTargetRatio)]
+        return optimalPath,localTarget
     
     
     def plotOptimalPath(self,figNum):
-        optimalPath = self.getOptimalPath()
+        optimalPath,localTarget = self.getOptimalPath(0.8)
         optimalPathOneTouchArray = np.zeros((3,len(optimalPath)))
         optimalPathDoubleTouchArray = np.zeros((3,len(optimalPath)))
         pointerOneTouch = 0
@@ -208,15 +213,19 @@ class AnymalAStarGlobal:
 
 
 if __name__ == "__main__":
-    start = (5.0,1.0)
-    goal = (5.,18.)
+    start = (1.0,1.0)
+    goal = (1.,18.)
     terrain = at.Terrain(0)
     anyAStar = AnymalAStarGlobal(start,goal,terrain)
     
     time_start=time.time()
-    anyAStar.run()
+    success = anyAStar.run()
     time_end=time.time()
     print('A* Time:',time_end-time_start,'s')
+    
+    optimalPath, localTarget = anyAStar.getOptimalPath(0.7)
+    
+    print("The local target is", localTarget)
     
     anyAStar.plotOptimalPath(1)
     plt.show()
