@@ -61,8 +61,8 @@ class AnymalAStarGlobal:
         
         for x in X:
             for y in Y:
-                x = round(x,2)
-                y = round(y,2)
+                x = round(x,1)
+                y = round(y,1)
                 for i in range(self.terrain.terrainPlanes.shape[0]):
                     if self.terrain.terrainPlanes[i,4] <= x < self.terrain.terrainPlanes[i,5] and self.terrain.terrainPlanes[i,6] <= y < self.terrain.terrainPlanes[i,7]:
                         pointCloud[(x,y)] = Point((-self.terrain.terrainPlanes[i,3]-self.terrain.terrainPlanes[i,0]*x-self.terrain.terrainPlanes[i,1]*y)/self.terrain.terrainPlanes[i,2],self.terrain.terrainPlanes[i,8])           
@@ -177,6 +177,34 @@ class AnymalAStarGlobal:
         return optimalPath,localTarget
     
     
+    # This function checks if the local target is too close to the edge
+    def isCloseToEdge(self,node):
+        X = np.arange(-0.5,0.5,0.1)
+        Y = np.arange(-0.5,0.5,0.1)
+        
+        risk = 0.0
+        counter0 = 0
+        counter1 = 0
+        counter2 = 0
+        counter = 0
+        
+        for x in X:
+            for y in Y:
+                if (round(node[0]+x,1),round(node[1]+y,1)) in self.pointCloud.keys():
+                    counter2 = counter2 + 1
+                    if abs(self.pointCloud[round(node[0]+x,1),round(node[1]+y,1)].z - node[2]) > 0.5:
+                        distance = math.sqrt(x**2 + y**2)
+                        risk = risk + math.exp(-distance)
+                        counter0 = counter0 + 1
+                else:
+                    # print(round(node[0]+x,1),round(node[1]+y,1))
+                    distance = math.sqrt(x**2 + y**2)
+                    risk = risk + math.exp(-distance)
+                    counter1 = counter1 + 1
+                counter = counter + 1
+        return risk/counter
+    
+    
     def plotOptimalPath(self,figNum):
         optimalPath,localTarget = self.getOptimalPath(0.8)
         optimalPathOneTouchArray = np.zeros((3,len(optimalPath)))
@@ -218,14 +246,22 @@ if __name__ == "__main__":
     terrain = at.Terrain(0)
     anyAStar = AnymalAStarGlobal(start,goal,terrain)
     
+    # testX = 1.0
+    # testY = 1.5
+    # print("The z of point (",testX,",",testY,") is ",anyAStar.pointCloud[(testX,testY)].z)
+    
     time_start=time.time()
     success = anyAStar.run()
     time_end=time.time()
     print('A* Time:',time_end-time_start,'s')
     
     optimalPath, localTarget = anyAStar.getOptimalPath(0.7)
-    
     print("The local target is", localTarget)
+    
+    risk = anyAStar.isCloseToEdge((2.0, 6.0, 0.75, 0.0, 1))
+    print("The risk is ",risk)
+    
+    
     
     anyAStar.plotOptimalPath(1)
     plt.show()
