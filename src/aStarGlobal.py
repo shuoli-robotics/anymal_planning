@@ -204,6 +204,23 @@ class AnymalAStarGlobal:
                 counter = counter + 1
         return risk/counter
     
+    def refineTarget(self,node):
+        nodeRisk = self.isCloseToEdge(node)
+        if nodeRisk > 0.2:
+            refinedTarget = node
+            minRisk = nodeRisk
+            X = np.arange(-0.5,0.5,0.1)
+            Y = np.arange(-0.5,0.5,0.1)
+            for x in X:
+                for y in Y:
+                    if (round(node[0]+x,1),round(node[1]+y,1)) in self.pointCloud.keys() and self.isCloseToEdge(node) < minRisk:
+                        refinedTarget = (round(node[0]+x,1),round(node[1]+y,1),self.pointCloud[(round(node[0]+x,1),round(node[1]+y,1))].z,node[3])
+                        minRisk = self.isCloseToEdge(node)
+        else:
+            refinedTarget = node
+        return refinedTarget
+                        
+    
     
     def plotOptimalPath(self,figNum):
         optimalPath,localTarget = self.getOptimalPath(0.8)
@@ -258,9 +275,12 @@ if __name__ == "__main__":
     optimalPath, localTarget = anyAStar.getOptimalPath(0.7)
     print("The local target is", localTarget)
     
-    risk = anyAStar.isCloseToEdge((2.0, 6.0, 0.75, 0.0, 1))
-    print("The risk is ",risk)
+    testTarget = (2.0, 6.0, 0.75, 0.0, 1)
+    risk = anyAStar.isCloseToEdge((1.1, 6.0, 0.75, 0.0, 1))
+    print("The risk before refinement is ",risk)
     
+    refinedTarget = anyAStar.refineTarget(testTarget)
+    print("The target after refinement is ",refinedTarget)
     
     
     anyAStar.plotOptimalPath(1)
