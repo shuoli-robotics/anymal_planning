@@ -225,7 +225,7 @@ class AnymalAStarGlobal:
                         
     
     
-    def plotOptimalPath(self,figNum):
+    def plotOptimalPath(self,ax):
         optimalPath,localTarget = self.getOptimalPath(0.8)
         optimalPathOneTouchArray = np.zeros((3,len(optimalPath)))
         optimalPathDoubleTouchArray = np.zeros((3,len(optimalPath)))
@@ -246,8 +246,8 @@ class AnymalAStarGlobal:
         pointerDoubleTouch = pointerDoubleTouch -1
 
         plt.rcParams["figure.figsize"]=20,20
-        fig = plt.figure(figNum)
-        ax = fig.gca(projection='3d')
+        # fig = plt.figure(figNum)
+        # ax = fig.gca(projection='3d')
 
         self.terrain.plotPlanes(ax)
 
@@ -261,8 +261,8 @@ class AnymalAStarGlobal:
 
 
 if __name__ == "__main__":
-    start = (1.0,1.0)
-    goal = (1.,18.)
+    start = (4.0,1.0)
+    goal = (6.,18.)
     terrain = at.Terrain(0)
     anyAStar = AnymalAStarGlobal(start,goal,terrain)
     
@@ -278,13 +278,16 @@ if __name__ == "__main__":
     optimalPath, localTarget = anyAStar.getOptimalPath(0.7)
     print("The local target is", localTarget)
     
-    testTarget = (2.9, 6.0, 0.75, 0.0, 1)
-    risk = anyAStar.isCloseToEdge(testTarget)
-    print("The risk before refinement is ",risk)
+    # testTarget = (2.9, 6.0, 0.75, 0.0, 1)
+    # risk = anyAStar.isCloseToEdge(testTarget)
+    # print("The risk before refinement is ",risk)
     
-    refinedTarget = anyAStar.refineTarget(testTarget)
+    refinedTarget = anyAStar.refineTarget(localTarget)
     print("The target before refinement is ",testTarget,"The target after refinement is ",refinedTarget)
     
-    
-    anyAStar.plotOptimalPath(1)
+    fig = plt.figure(1)
+    ax = fig.gca(projection='3d')
+    plt.rcParams["figure.figsize"]=20,20
+    anyAStar.plotOptimalPath(ax)
+    terrain.plotPlanes(ax)
     plt.show()

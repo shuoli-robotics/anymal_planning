@@ -494,49 +494,49 @@ class AnymalAStarLocal:
 
 
         
-    def plotOptimalPath(self,figNum):
+    def plotOptimalPath(self,ax):
         optimalPath = self.getOptimalPath()
         optimalPathOneTouchArray = np.zeros((3,len(optimalPath)))
         optimalPathDoubleTouchArray = np.zeros((3,len(optimalPath)))
         pointerOneTouch = 0
         pointerDoubleTouch = 0
         for i, node in enumerate(optimalPath):
-            if anyAStar.closedList[node].legID == 'LF' and node[0][3] == False:
+            if self.closedList[node].legID == 'LF' and node[0][3] == False:
                 optimalPathOneTouchArray[0,pointerOneTouch] = node[0][0]
                 optimalPathOneTouchArray[1,pointerOneTouch] = node[0][1]
                 optimalPathOneTouchArray[2,pointerOneTouch] = node[0][2]
                 pointerOneTouch = pointerOneTouch + 1
-            elif anyAStar.closedList[node].legID == 'RF' and node[1][3] == False:
+            elif self.closedList[node].legID == 'RF' and node[1][3] == False:
                 optimalPathOneTouchArray[0,pointerOneTouch] = node[1][0]
                 optimalPathOneTouchArray[1,pointerOneTouch] = node[1][1]
                 optimalPathOneTouchArray[2,pointerOneTouch] = node[1][2]
                 pointerOneTouch = pointerOneTouch + 1
-            elif anyAStar.closedList[node].legID == 'LH' and node[2][3] == False:
+            elif self.closedList[node].legID == 'LH' and node[2][3] == False:
                 optimalPathOneTouchArray[0,pointerOneTouch] = node[2][0]
                 optimalPathOneTouchArray[1,pointerOneTouch] = node[2][1]
                 optimalPathOneTouchArray[2,pointerOneTouch] = node[2][2]
                 pointerOneTouch = pointerOneTouch + 1
-            elif anyAStar.closedList[node].legID == 'RH' and node[3][3] == False:
+            elif self.closedList[node].legID == 'RH' and node[3][3] == False:
                 optimalPathOneTouchArray[0,pointerOneTouch] = node[3][0]
                 optimalPathOneTouchArray[1,pointerOneTouch] = node[3][1]
                 optimalPathOneTouchArray[2,pointerOneTouch] = node[3][2]
                 pointerOneTouch = pointerOneTouch + 1
-            elif anyAStar.closedList[node].legID == 'LF' and node[0][3] == True:
+            elif self.closedList[node].legID == 'LF' and node[0][3] == True:
                 optimalPathDoubleTouchArray[0,pointerDoubleTouch] = node[0][0]
                 optimalPathDoubleTouchArray[1,pointerDoubleTouch] = node[0][1]
                 optimalPathDoubleTouchArray[2,pointerDoubleTouch] = node[0][2]
                 pointerDoubleTouch = pointerDoubleTouch + 1
-            elif anyAStar.closedList[node].legID == 'RF' and node[1][3] == True:
+            elif self.closedList[node].legID == 'RF' and node[1][3] == True:
                 optimalPathDoubleTouchArray[0,pointerDoubleTouch] = node[1][0]
                 optimalPathDoubleTouchArray[1,pointerDoubleTouch] = node[1][1]
                 optimalPathDoubleTouchArray[2,pointerDoubleTouch] = node[1][2]
                 pointerDoubleTouch = pointerDoubleTouch + 1
-            elif anyAStar.closedList[node].legID == 'LH' and node[2][3] == True:
+            elif self.closedList[node].legID == 'LH' and node[2][3] == True:
                 optimalPathDoubleTouchArray[0,pointerDoubleTouch] = node[2][0]
                 optimalPathDoubleTouchArray[1,pointerDoubleTouch] = node[2][1]
                 optimalPathDoubleTouchArray[2,pointerDoubleTouch] = node[2][2]
                 pointerDoubleTouch = pointerDoubleTouch + 1
-            elif anyAStar.closedList[node].legID == 'RH' and node[3][3] == True:
+            elif self.closedList[node].legID == 'RH' and node[3][3] == True:
                 optimalPathDoubleTouchArray[0,pointerDoubleTouch] = node[3][0]
                 optimalPathDoubleTouchArray[1,pointerDoubleTouch] = node[3][1]
                 optimalPathDoubleTouchArray[2,pointerDoubleTouch] = node[3][2]
@@ -546,11 +546,11 @@ class AnymalAStarLocal:
         pointerOneTouch = pointerOneTouch -1
         pointerDoubleTouch = pointerDoubleTouch -1
 
-        plt.rcParams["figure.figsize"]=20,20
-        fig = plt.figure(figNum)
-        ax = fig.gca(projection='3d')
+        # plt.rcParams["figure.figsize"]=20,20
+        # fig = plt.figure(figNum)
+        # ax = fig.gca(projection='3d')
 
-        self.terrain.plotPlanes(ax)
+        # self.terrain.plotPlanes(ax)
 
         ax.scatter(optimalPathOneTouchArray[0,0:pointerOneTouch],optimalPathOneTouchArray[1,0:pointerOneTouch],optimalPathOneTouchArray[2,0:pointerOneTouch],color = 'red',s=40)
         ax.scatter(optimalPathDoubleTouchArray[0,0:pointerDoubleTouch],optimalPathDoubleTouchArray[1,0:pointerDoubleTouch],optimalPathDoubleTouchArray[2,0:pointerDoubleTouch],color = 'green',s=40)
@@ -560,7 +560,7 @@ class AnymalAStarLocal:
         ax.set_ylim([0,20])
         ax.set_zlim([0,5])
         
-    def plotSearchProgress(self,figNum):
+    def plotSearchProgress(self,ax):
         searchedPoints = np.zeros((3,len(self.closedList)))
         
         for i,node in enumerate(self.closedList):
@@ -568,17 +568,21 @@ class AnymalAStarLocal:
             searchedPoints[1,i] = node[0][1]
             searchedPoints[2,i] = node[0][2]
 
-        plt.rcParams["figure.figsize"]=20,20
-        fig = plt.figure(figNum)
-        ax = fig.gca(projection='3d')
+        # plt.rcParams["figure.figsize"]=20,20
+        # fig = plt.figure(figNum)
+        # ax = fig.gca(projection='3d')
 
-        self.terrain.plotPlanes(ax)
+        # self.terrain.plotPlanes(ax)
         ax.scatter(searchedPoints[0,:],searchedPoints[1,:],searchedPoints[2,:])
 
 if __name__ == "__main__":
     # From start to end
-    start = (2.0,4.0,3.14/2)
-    goal = (2.0,18.0,3.14/2)
+    # start = (2.0,4.0,3.14/2)
+    # goal = (2.0,18.0,3.14/2)
+    
+    start = (4.0,1.0,3.14/2)
+    goal = (7.4,5.5,3.14/2)
+    
     terrain = at.Terrain(0)
 
     anyAStar = AnymalAStarLocal(start,goal,terrain)
@@ -588,7 +592,12 @@ if __name__ == "__main__":
     
     print('A* Time:',time_end-time_start,'s')
 
-    anyAStar.plotSearchProgress(3)
-    anyAStar.plotOptimalPath(2)
+    fig = plt.figure(1)
+    ax = fig.gca(projection='3d')
+    plt.rcParams["figure.figsize"]=20,20
+    
+    anyAStar.plotSearchProgress(ax)
+    anyAStar.plotOptimalPath(ax)
+    terrain.plotPlanes(ax)
     plt.show()
 
