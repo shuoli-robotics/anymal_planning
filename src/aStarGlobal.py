@@ -48,8 +48,8 @@ class AnymalAStarGlobal:
         
         self.openList = {}
         self.closedList = {}
-        print("The start node is {}".format(self.start))
-        print("The goal node is {}".format(self.goal))
+        # print("The start node is {}".format(self.start))
+        # print("The goal node is {}".format(self.goal))
         
         
     def generatePointCloud(self):
@@ -80,7 +80,7 @@ class AnymalAStarGlobal:
             currentNode = self.moveToMinNode()
             numSearchTimes = numSearchTimes + 1
             if self.searchChildren(currentNode):
-                print("A* found the path")
+                # print("A* found the path")
                 break
         #print(self.closedList)
     
@@ -110,8 +110,8 @@ class AnymalAStarGlobal:
                 self.openList[child] = AnymalStateNode(currentNode,self.getG(currentNode,child,act),self.getH(child))
                 
             if child == self.goal:
-                print("Found the path")
-                print(child)
+                # print("Found the path")
+                # print(child)
                 self.closedList[child] = copy.deepcopy(self.openList[child])
                 self.openList.pop(child)
                 return True
@@ -282,8 +282,8 @@ if __name__ == "__main__":
     # risk = anyAStar.isCloseToEdge(testTarget)
     # print("The risk before refinement is ",risk)
     
-    refinedTarget = anyAStar.refineTarget(localTarget)
-    print("The target before refinement is ",testTarget,"The target after refinement is ",refinedTarget)
+    # refinedTarget = anyAStar.refineTarget(localTarget)
+    # print("The target before refinement is ",testTarget,"The target after refinement is ",refinedTarget)
     
     fig = plt.figure(1)
     ax = fig.gca(projection='3d')

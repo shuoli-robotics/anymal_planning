@@ -18,7 +18,7 @@ ax = fig.gca(projection='3d')
 terrain.plotPlanes(ax)
 
 
-startGlobal = (5.0,1.0)
+startGlobal = (2.0,1.0)
 goalGlobal = (2.0,18.0)
 startLocal = (startGlobal[0],startGlobal[1],3.14/2)
 
@@ -34,7 +34,7 @@ while True:
     
     localTarget = (refinedLocalTarget[0],refinedLocalTarget[1],3.14/2)
     
-    print("localTarget =",localTarget,"startLocal = ",startLocal)
+    # print("localTarget =",localTarget,"startLocal = ",startLocal)
     
     localPlanner = aStarLocal.AnymalAStarLocal(startLocal,localTarget,terrain)
     localPlanner.run()

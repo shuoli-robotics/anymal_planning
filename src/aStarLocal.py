@@ -77,8 +77,8 @@ class AnymalAStarLocal:
         self.logger.addHandler(fh)
         self.logTimes = 2000
         
-        print("The start node is {}".format(self.start))
-        print("The goal node is {}".format(self.goal))
+        # print("The start node is {}".format(self.start))
+        # print("The goal node is {}".format(self.goal))
         
     def generatePointCloud(self):
         X = np.arange(0,10,0.1)
@@ -159,7 +159,7 @@ class AnymalAStarLocal:
         self.openList[self.start] = AnymalStateNode(self.start,0,self.getH(self.start),self.start,[],'RH',self.nodeID)
         
         while len(self.openList) > 0:
-            if self.numSearchTimes > 30000:
+            if self.numSearchTimes > 3000:
                 print("A* stucks and failed!")
                 return False
             
@@ -171,7 +171,7 @@ class AnymalAStarLocal:
             # print("[run {}] open list is {} ".format(self.numSearchTimes,self.openList))
             
             if self.searchChildren(currentNode):
-                print("A* found the path")
+                # print("A* found the path")
                 break
         #print(self.closedList)
         
@@ -249,7 +249,7 @@ class AnymalAStarLocal:
                 
             # if child == self.goal:
             if self.checkTerminal(child):
-                print("Found the path")
+                # print("Found the path")
                 # print(child)
                 self.closedList[child] = copy.deepcopy(self.openList[child])
                 self.openList.pop(child)
@@ -580,8 +580,8 @@ if __name__ == "__main__":
     # start = (2.0,4.0,3.14/2)
     # goal = (2.0,18.0,3.14/2)
     
-    start = (4.0,1.0,3.14/2)
-    goal = (7.4,5.5,3.14/2)
+    start = (5.0,2.0,3.14/2)
+    goal = (5.0,15,3.14/2)
     
     terrain = at.Terrain(0)
 
@@ -597,7 +597,7 @@ if __name__ == "__main__":
     plt.rcParams["figure.figsize"]=20,20
     
     anyAStar.plotSearchProgress(ax)
-    anyAStar.plotOptimalPath(ax)
+    # anyAStar.plotOptimalPath(ax)
     terrain.plotPlanes(ax)
     plt.show()
 
