@@ -7,6 +7,7 @@ from mpl_toolkits.mplot3d import axes3d
 import math
 import anyterrain as at
 import time
+from mayavi import mlab
 
 class Point:
     def __init__(self,z,sigma):
@@ -225,7 +226,7 @@ class AnymalAStarGlobal:
                         
     
     
-    def plotOptimalPath(self,ax):
+    def plotOptimalPath(self,fig):
         optimalPath,localTarget = self.getOptimalPath(0.8)
         optimalPathOneTouchArray = np.zeros((3,len(optimalPath)))
         optimalPathDoubleTouchArray = np.zeros((3,len(optimalPath)))
@@ -245,24 +246,24 @@ class AnymalAStarGlobal:
         pointerOneTouch = pointerOneTouch -1
         pointerDoubleTouch = pointerDoubleTouch -1
 
-        plt.rcParams["figure.figsize"]=20,20
-        # fig = plt.figure(figNum)
-        # ax = fig.gca(projection='3d')
+        # plt.rcParams["figure.figsize"]=20,20
+        # # fig = plt.figure(figNum)
+        # # ax = fig.gca(projection='3d')
 
-        self.terrain.plotPlanes(ax)
+        self.terrain.plotPlanes(fig)
 
-        ax.scatter(optimalPathOneTouchArray[0,0:pointerOneTouch],optimalPathOneTouchArray[1,0:pointerOneTouch],optimalPathOneTouchArray[2,0:pointerOneTouch],color = 'red',s=40)
-        ax.scatter(optimalPathDoubleTouchArray[0,0:pointerDoubleTouch],optimalPathDoubleTouchArray[1,0:pointerDoubleTouch],optimalPathDoubleTouchArray[2,0:pointerDoubleTouch],color = 'green',s=40)
+        mlab.points3d(optimalPathOneTouchArray[0,0:pointerOneTouch],optimalPathOneTouchArray[1,0:pointerOneTouch],optimalPathOneTouchArray[2,0:pointerOneTouch],scale_factor=0.05,color = (1,0,0),figure = fig)
+        mlab.points3d(optimalPathDoubleTouchArray[0,0:pointerDoubleTouch],optimalPathDoubleTouchArray[1,0:pointerDoubleTouch],optimalPathDoubleTouchArray[2,0:pointerDoubleTouch],scale_factor=0.05,color = (0,1,0),figure = fig)
 
 
-        ax.set_xlim([0,10])
-        ax.set_ylim([0,20])
-        ax.set_zlim([0,5])
+        # ax.set_xlim([0,10])
+        # ax.set_ylim([0,20])
+        # ax.set_zlim([0,5])
 
 
 if __name__ == "__main__":
-    start = (4.0,1.0)
-    goal = (6.,18.)
+    start = (5.0,1.0)
+    goal = (5.,18.)
     terrain = at.Terrain(0)
     anyAStar = AnymalAStarGlobal(start,goal,terrain)
     
@@ -285,9 +286,12 @@ if __name__ == "__main__":
     # refinedTarget = anyAStar.refineTarget(localTarget)
     # print("The target before refinement is ",testTarget,"The target after refinement is ",refinedTarget)
     
-    fig = plt.figure(1)
-    ax = fig.gca(projection='3d')
-    plt.rcParams["figure.figsize"]=20,20
-    anyAStar.plotOptimalPath(ax)
-    terrain.plotPlanes(ax)
-    plt.show()
+    # fig = plt.figure(1)
+    # ax = fig.gca(projection='3d')
+    # plt.rcParams["figure.figsize"]=20,20
+    
+    fig = mlab.figure(1)
+    anyAStar.plotOptimalPath(fig)
+    mlab.show()
+    # terrain.plotPlanes(ax)
+    # plt.show()

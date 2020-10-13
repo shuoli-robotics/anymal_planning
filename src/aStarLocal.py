@@ -8,6 +8,8 @@ import math
 import anyterrain as at
 import time
 import logging
+from mayavi import mlab
+
 
 
 class Point:
@@ -494,7 +496,7 @@ class AnymalAStarLocal:
 
 
         
-    def plotOptimalPath(self,ax):
+    def plotOptimalPath(self,fig):
         optimalPath = self.getOptimalPath()
         optimalPathOneTouchArray = np.zeros((3,len(optimalPath)))
         optimalPathDoubleTouchArray = np.zeros((3,len(optimalPath)))
@@ -546,42 +548,25 @@ class AnymalAStarLocal:
         pointerOneTouch = pointerOneTouch -1
         pointerDoubleTouch = pointerDoubleTouch -1
 
-        # plt.rcParams["figure.figsize"]=20,20
-        # fig = plt.figure(figNum)
-        # ax = fig.gca(projection='3d')
-
-        # self.terrain.plotPlanes(ax)
-
-        ax.scatter(optimalPathOneTouchArray[0,0:pointerOneTouch],optimalPathOneTouchArray[1,0:pointerOneTouch],optimalPathOneTouchArray[2,0:pointerOneTouch],color = 'red',s=40)
-        ax.scatter(optimalPathDoubleTouchArray[0,0:pointerDoubleTouch],optimalPathDoubleTouchArray[1,0:pointerDoubleTouch],optimalPathDoubleTouchArray[2,0:pointerDoubleTouch],color = 'green',s=40)
-
-
-        ax.set_xlim([0,10])
-        ax.set_ylim([0,20])
-        ax.set_zlim([0,5])
+        mlab.points3d(optimalPathOneTouchArray[0,0:pointerOneTouch],optimalPathOneTouchArray[1,0:pointerOneTouch],optimalPathOneTouchArray[2,0:pointerOneTouch],scale_factor=0.05,color = (1,0,0),figure = fig)
+        mlab.points3d(optimalPathDoubleTouchArray[0,0:pointerDoubleTouch],optimalPathDoubleTouchArray[1,0:pointerDoubleTouch],optimalPathDoubleTouchArray[2,0:pointerDoubleTouch],scale_factor=0.05,color = (0,1,0),figure = fig)
         
-    def plotSearchProgress(self,ax):
+    def plotSearchProgress(self,fig):
         searchedPoints = np.zeros((3,len(self.closedList)))
         
         for i,node in enumerate(self.closedList):
             searchedPoints[0,i] = node[0][0] 
             searchedPoints[1,i] = node[0][1]
             searchedPoints[2,i] = node[0][2]
-
-        # plt.rcParams["figure.figsize"]=20,20
-        # fig = plt.figure(figNum)
-        # ax = fig.gca(projection='3d')
-
-        # self.terrain.plotPlanes(ax)
-        ax.scatter(searchedPoints[0,:],searchedPoints[1,:],searchedPoints[2,:])
+        mlab.points3d(searchedPoints[0,:],searchedPoints[1,:],searchedPoints[2,:],scale_factor=0.05,color = (0,0,1),figure = fig)
 
 if __name__ == "__main__":
     # From start to end
     # start = (2.0,4.0,3.14/2)
     # goal = (2.0,18.0,3.14/2)
     
-    start = (5.0,2.0,3.14/2)
-    goal = (5.0,15,3.14/2)
+    start = (1.0,2.0,3.14/2)
+    goal = (1.0,15,3.14/2)
     
     terrain = at.Terrain(0)
 
@@ -592,12 +577,10 @@ if __name__ == "__main__":
     
     print('A* Time:',time_end-time_start,'s')
 
-    fig = plt.figure(1)
-    ax = fig.gca(projection='3d')
-    plt.rcParams["figure.figsize"]=20,20
+    fig = mlab.figure(1)
     
-    anyAStar.plotSearchProgress(ax)
-    # anyAStar.plotOptimalPath(ax)
-    terrain.plotPlanes(ax)
-    plt.show()
+    # anyAStar.plotSearchProgress(fig)
+    anyAStar.plotOptimalPath(fig)
+    terrain.plotPlanes(fig)
+    mlab.show()
 

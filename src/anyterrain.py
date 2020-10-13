@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d 
 import math
+from mayavi import mlab
 
 class Point:
     def __init__(self,z,sigma):
@@ -57,13 +58,15 @@ class Terrain:
         coefficient = np.append(n,d)
         return coefficient
     
-    def plotPlanes(self,ax):
+    def plotPlanes(self,fig):
         for plane in range(self.terrainPlanes.shape[0]):
             x = np.linspace(self.terrainPlanes[plane,4],self.terrainPlanes[plane,5],100)
             y = np.linspace(self.terrainPlanes[plane,6],self.terrainPlanes[plane,7],100)
             X,Y = np.meshgrid(x,y)
             Z = ((-self.terrainPlanes[plane,0]*X-self.terrainPlanes[plane,1]*Y)-self.terrainPlanes[plane,3])/self.terrainPlanes[plane,2]
-            surf = ax.plot_surface(X, Y, Z,color = [0.3,0.3,0.3])
+            # surf = ax.plot_surface(X, Y, Z,color = [0.3,0.3,0.3])
+            mlab.mesh(X,Y,Z,figure = fig,color=(0.3, 0.3, 0.3))
+            temp = 1
     
             
 
@@ -71,7 +74,10 @@ class Terrain:
             
 
 if __name__ == "__main__":
-    fig = plt.figure(1)
-    ax = fig.gca(projection='3d')
+    # fig = plt.figure(1)
+    # ax = fig.gca(projection='3d')
     tr = Terrain(0)
-    tr.plotPlanes(ax)  
+    
+    fig = mlab.figure(1)
+    tr.plotPlanes(fig)  
+    mlab.show()

@@ -10,16 +10,16 @@ import anyterrain as at
 import time
 import aStarLocal
 import aStarGlobal
+from mayavi import mlab
 
 
 terrain = at.Terrain(0)
-fig = plt.figure(1)
-ax = fig.gca(projection='3d')
-terrain.plotPlanes(ax)
+fig = mlab.figure(1)
+terrain.plotPlanes(fig)
 
 
-startGlobal = (2.0,1.0)
-goalGlobal = (2.0,18.0)
+startGlobal = (5.0,1.0)
+goalGlobal = (5.0,18.0)
 startLocal = (startGlobal[0],startGlobal[1],3.14/2)
 
 flagArrivedTheGoal = False
@@ -38,7 +38,7 @@ while True:
     
     localPlanner = aStarLocal.AnymalAStarLocal(startLocal,localTarget,terrain)
     localPlanner.run()
-    localPlanner.plotOptimalPath(ax)
+    localPlanner.plotOptimalPath(fig)
     
     startGlobal = (localTarget[0],localTarget[1])
     startLocal = localTarget
@@ -48,4 +48,4 @@ while True:
         break
     
     
-plt.show()    
+mlab.show()    
