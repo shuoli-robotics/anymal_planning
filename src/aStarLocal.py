@@ -548,8 +548,8 @@ class AnymalAStarLocal:
         pointerOneTouch = pointerOneTouch -1
         pointerDoubleTouch = pointerDoubleTouch -1
 
-        mlab.points3d(optimalPathOneTouchArray[0,0:pointerOneTouch],optimalPathOneTouchArray[1,0:pointerOneTouch],optimalPathOneTouchArray[2,0:pointerOneTouch],scale_factor=0.05,color = (1,0,0),figure = fig)
-        mlab.points3d(optimalPathDoubleTouchArray[0,0:pointerDoubleTouch],optimalPathDoubleTouchArray[1,0:pointerDoubleTouch],optimalPathDoubleTouchArray[2,0:pointerDoubleTouch],scale_factor=0.05,color = (0,1,0),figure = fig)
+        mlab.points3d(optimalPathOneTouchArray[0,0:pointerOneTouch],optimalPathOneTouchArray[1,0:pointerOneTouch],optimalPathOneTouchArray[2,0:pointerOneTouch],scale_factor=0.1,color = (1,0,0),figure = fig)
+        mlab.points3d(optimalPathDoubleTouchArray[0,0:pointerDoubleTouch],optimalPathDoubleTouchArray[1,0:pointerDoubleTouch],optimalPathDoubleTouchArray[2,0:pointerDoubleTouch],scale_factor=0.1,color = (0,1,0),figure = fig)
         
     def plotSearchProgress(self,fig):
         searchedPoints = np.zeros((3,len(self.closedList)))
@@ -558,7 +558,7 @@ class AnymalAStarLocal:
             searchedPoints[0,i] = node[0][0] 
             searchedPoints[1,i] = node[0][1]
             searchedPoints[2,i] = node[0][2]
-        mlab.points3d(searchedPoints[0,:],searchedPoints[1,:],searchedPoints[2,:],scale_factor=0.05,color = (0,0,1),figure = fig)
+        mlab.points3d(searchedPoints[0,:],searchedPoints[1,:],searchedPoints[2,:],scale_factor=0.2,color = (0,0,1),figure = fig)
 
 if __name__ == "__main__":
     # From start to end

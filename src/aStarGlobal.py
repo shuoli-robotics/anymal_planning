@@ -252,8 +252,8 @@ class AnymalAStarGlobal:
 
         self.terrain.plotPlanes(fig)
 
-        mlab.points3d(optimalPathOneTouchArray[0,0:pointerOneTouch],optimalPathOneTouchArray[1,0:pointerOneTouch],optimalPathOneTouchArray[2,0:pointerOneTouch],scale_factor=0.05,color = (1,0,0),figure = fig)
-        mlab.points3d(optimalPathDoubleTouchArray[0,0:pointerDoubleTouch],optimalPathDoubleTouchArray[1,0:pointerDoubleTouch],optimalPathDoubleTouchArray[2,0:pointerDoubleTouch],scale_factor=0.05,color = (0,1,0),figure = fig)
+        mlab.points3d(optimalPathOneTouchArray[0,0:pointerOneTouch],optimalPathOneTouchArray[1,0:pointerOneTouch],optimalPathOneTouchArray[2,0:pointerOneTouch],scale_factor=0.1,color = (1,0,0),figure = fig)
+        mlab.points3d(optimalPathDoubleTouchArray[0,0:pointerDoubleTouch],optimalPathDoubleTouchArray[1,0:pointerDoubleTouch],optimalPathDoubleTouchArray[2,0:pointerDoubleTouch],scale_factor=0.1,color = (0,1,0),figure = fig)
 
 
         # ax.set_xlim([0,10])

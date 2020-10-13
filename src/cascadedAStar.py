@@ -14,12 +14,12 @@ from mayavi import mlab
 
 
 terrain = at.Terrain(0)
-fig = mlab.figure(1)
+fig = mlab.figure(1,size=(1200, 1050))
 terrain.plotPlanes(fig)
 
 
-startGlobal = (5.0,1.0)
-goalGlobal = (5.0,18.0)
+startGlobal = (2.0,1.0)
+goalGlobal = (2.0,18.0)
 startLocal = (startGlobal[0],startGlobal[1],3.14/2)
 
 flagArrivedTheGoal = False
@@ -47,5 +47,6 @@ while True:
     if counter == 10:
         break
     
-    
+mlab.view(azimuth=-80.0,roll = -12.0)
+print(mlab.view())
 mlab.show()    
