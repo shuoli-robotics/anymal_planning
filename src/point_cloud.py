@@ -61,6 +61,10 @@ if __name__ == "__main__":
     pc = CentralLake()
     fig = mlab.figure(1)
     # ax = fig.gca(projection='3d')
-    pc.show_point_cloud(fig)
+    # pc.show_point_cloud(fig)
+
+    testX = 1.0
+    testY = 1.0
+    print("The Z of the point ({},{}) is {}. Its sigma is {}".format(testX,testY,pc.pc[(testX,testY)].z,pc.pc[(testX,testY)].sigma))
 
     temp = 1
