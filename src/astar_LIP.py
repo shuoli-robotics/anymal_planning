@@ -4,66 +4,58 @@ sys.path.insert(0, os.path.abspath('../src'))
 import numpy as np
 import copy
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import axes3d
 import math
-import anyterrain as at
 import point_cloud as pc
+from mayavi import mlab
 
-
-
-
-
-
-
-# def generatePointCloud(terrainPlanes):
-#     X = np.arange(0, 10, 0.1)
-#     Y = np.arange(0, 20, 0.1)
-#     X = np.append(X, 10)
-#     Y = np.append(Y, 20)
-#     pointCloud = {}
-#
-#     for x in X:
-#         for y in Y:
-#             x = round(x, 2)
-#             y = round(y, 2)
-#             for i in range(terrainPlanes.shape[0]):
-#                 if terrainPlanes[i, 4] <= x < terrainPlanes[i, 5] and terrainPlanes[i, 6] <= y < terrainPlanes[i, 7]:
-#                     pointCloud[(x, y)] = Point(
-#                         (-terrainPlanes[i, 3] - terrainPlanes[i, 0] * x - terrainPlanes[i, 1] * y) / terrainPlanes[
-#                             i, 2], terrainPlanes[i, 8])
-#                     break
-#     return pointCloud
-
-
-
-pointCloud = pc.PointCloud(0)
-
-
-
-
-# pointCloud = generatePointCloud(terrain.terrainPlanes)
 
 class AnymalStateNode:
-    def __init__(self,parentIndex,g,h):
+    def __init__(self,parentIndex,g,h,states):
         self.parent = parentIndex
         self.g = g
         self.h = h
         self.f = g + h
 
+        self.x = states[0]
+        self.vx = states[1]
+        self.y = states[2]
+        self.vy = states[3]
+
+
+class ActionsBase:
+    def __init__(self):
+        self.actions = []
+        for deltaX in [-0.2,-0.1,0.0,0.1,0.2]:
+            for deltaY in [-0.2,-0.1,0.0,0.1,0.2]:
+                if deltaX ==0 and deltaY == 0:
+                    continue
+                else:
+                    self.actions.append((deltaX,deltaY))
+
+
+    def getPossibleActions(self):
+        return self.actions
+
 
 class AnymalAStar:
-    def __init__(self, pointCloud, start, goal):
-        self.pointCloud = pointCloud
+    def __init__(self, start, goal):
+        self.pointCloud = pc.CentralLake().pc
         self.start = start
         self.goal = goal
+        self.initialState = (start[0],0.,start[1],0.)
         self.openList = {}
         self.closedList = {}
+        self.actions = ActionsBase()
+        self.phaseTime = 0.5
+        self.z = 0.43
+        self.g = 9.81
+        self.desired_vel = 0.5
         print("The start node is {}".format(self.start))
         print("The goal node is {}".format(self.goal))
 
     def run(self):
         # add the start point to the open list. Its g = 0, h is an estimate distance towards the goal
-        self.openList[self.start] = AnymalStateNode(self.start, 0, self.getH(self.start))
+        self.openList[self.start] = AnymalStateNode(self.start, 0, self.getH(self.start),self.initialState)
 
         numSearchTimes = 0
 
@@ -81,12 +73,11 @@ class AnymalAStar:
     def searchChildren(self, currentNode):
         # print("searchChildren is running")
         numOfValidChildren = 0
-        actions = [(deltaX, deltaY, gamma) for deltaX in [-0.1, 0, 0.1] for deltaY in [0.1, 0.2] for gamma in [0, 1]]
 
-        for act in actions:
+        for act in self.actions.getPossibleActions():
             actionValid, child = self.checkAction(currentNode, act)
 
-            if actionValid == False:
+            if not actionValid:
                 continue
             # Here we have found a valid child of the current node. We need to check if this child is
             # already in the open list or closed list
@@ -94,13 +85,20 @@ class AnymalAStar:
                 continue
             elif child in self.openList:
                 # Check if we need to change the child's parent
-                if self.openList[child].g > self.getG(currentNode, child, act):
+                child_g,child_states = self.getG(currentNode, child, act)
+                if self.openList[child].g > child_g:
                     self.openList[child].parent = currentNode
-                    self.openList[child].g = self.getG(currentNode, child, act)
+                    self.openList[child].g = child_g
                     self.openList[child].f = self.openList[child].g + self.openList[child].h
+                    self.openList[child].x = child_states[0]
+                    self.openList[child].vx = child_states[1]
+                    self.openList[child].y = child_states[2]
+                    self.openList[child].vy = child_states[3]
+
+
             else:
-                self.openList[child] = AnymalStateNode(currentNode, self.getG(currentNode, child, act),
-                                                       self.getH(child))
+                child_g, child_states = self.getG(currentNode, child, act)
+                self.openList[child] = AnymalStateNode(currentNode, child_g,self.getH(child),child_states)
 
             if child == self.goal:
                 print("Found the path")
@@ -128,12 +126,12 @@ class AnymalAStar:
     # This function checks if the action can guide the robot from current node to a feasible node in the map
     def checkAction(self, currentNode, action):
         valid = False
-        child = ('nan', 'nan', 'nan', 'nan', 'nan')
+        child = ('nan','nan','nan')
         key = (round(currentNode[0] + action[0], 2), round(currentNode[1] + action[1], 2))
         if key in self.pointCloud.keys():
-            if abs(currentNode[2] - self.pointCloud[key].z) < 0.3:
+            if abs(currentNode[2] - self.pointCloud[key].z) < 0.2:
                 valid = True
-                child = (key[0], key[1], self.pointCloud[key].z, 0.0, action[2])
+                child = (key[0], key[1], self.pointCloud[key].z)
         return valid, child
 
     # This function calculate the g value of the child when there is a movement from the parent to the child
@@ -141,15 +139,29 @@ class AnymalAStar:
     # If it is a two-touch action, we penalize the distance by 1.5 and decrease covariance score by 0.1
     # So it is a balance of fast touch and the risk
     def getG(self, parent, child, action):
-        key = (child[0], child[1])
-        distance = math.sqrt((parent[0] - child[0]) ** 2 + (parent[1] - child[1]) ** 2)
-        if action[2] == 0:
-            value = distance + self.pointCloud[key].sigma
-        elif action[2] == 1:
-            value = distance * 1.5 + self.pointCloud[key].sigma * 0.1
-        else:
-            print("Warning!! invalid action")
-        return self.closedList[parent].f + value
+        self.g = 9.81
+        self.z = 0.43
+        p_x = child[0]
+        p_y = child[1]
+        omega = math.sqrt(self.g / self.z)
+        A = np.array([[np.cosh(omega * self.phaseTime), 1 / omega * np.sinh(omega * self.phaseTime)],
+                      [omega * np.sinh(omega * self.phaseTime), np.cosh(omega * self.phaseTime)]])
+        B = np.array([1 - np.cosh(omega * self.phaseTime), -omega * np.sinh(omega * self.phaseTime)])
+
+        x0 = np.array([self.closedList[parent].x, self.closedList[parent].vx])
+        y0 = np.array([self.closedList[parent].y, self.closedList[parent].vy])
+        states_x = A.dot(x0) + B * p_x
+        states_y = A.dot(y0) + B * p_y
+
+        distance = math.sqrt((self.closedList[parent].x - states_x[0]) ** 2 + (self.closedList[parent].y - states_y[0]) ** 2)
+
+        error_v0 =  abs(math.sqrt(self.closedList[parent].vx**2 + self.closedList[parent].vy**2) - self.desired_vel)
+        error_vf = abs(math.sqrt(states_x[1] ** 2 + states_y[1] ** 2) - self.desired_vel)
+        vel_cost = (error_v0 + error_vf)*self.phaseTime/2.0
+
+        value = distance
+
+        return self.closedList[parent].f + value, (states_x[0],states_x[1],states_y[0],states_y[1])
 
     def getOptimalPath(self):
         parent = self.goal
@@ -159,41 +171,34 @@ class AnymalAStar:
             optimalPath.append(parent)
         return optimalPath
 
-start = (0.,0.,0.,0.,0.)
-goal = (2.,18.,3.,0.,0.)
-anyAStar = AnymalAStar(pointCloud,start,goal)
+    def plot_result(self):
+        fig = mlab.figure(0)
+        self.pointCloud.show_point_cloud(fig)
+
+start = (2.,1.,0.)
+goal = (2.,2.,0.)
+anyAStar = AnymalAStar(start,goal)
 anyAStar.run()
+
+
 optimalPath = anyAStar.getOptimalPath()
 
-optimalPathOneTouchArray = np.zeros((3,len(optimalPath)))
-optimalPathDoubleTouchArray = np.zeros((3,len(optimalPath)))
-pointerOneTouch = 0
-pointerDoubleTouch = 0
-for i, node in enumerate(optimalPath):
-    if node[4] == 0:
-        optimalPathOneTouchArray[0,pointerOneTouch] = node[0]
-        optimalPathOneTouchArray[1,pointerOneTouch] = node[1]
-        optimalPathOneTouchArray[2,pointerOneTouch] = node[2]
-        pointerOneTouch = pointerOneTouch + 1
-    elif node[4] == 1:
-        optimalPathDoubleTouchArray[0,pointerDoubleTouch] = node[0]
-        optimalPathDoubleTouchArray[1,pointerDoubleTouch] = node[1]
-        optimalPathDoubleTouchArray[2,pointerDoubleTouch] = node[2]
-        pointerDoubleTouch = pointerDoubleTouch + 1
-pointerOneTouch = pointerOneTouch -1
-pointerDoubleTouch = pointerDoubleTouch -1
-
-plt.rcParams["figure.figsize"]=20,20
-fig = plt.figure(2)
-ax = fig.gca(projection='3d')
-
-terrain.plotPlanes(ax,terrain.terrainPlanes)
-
-ax.scatter(optimalPathOneTouchArray[0,0:pointerOneTouch],optimalPathOneTouchArray[1,0:pointerOneTouch],optimalPathOneTouchArray[2,0:pointerOneTouch],color = 'red',s=40)
-ax.scatter(optimalPathDoubleTouchArray[0,0:pointerDoubleTouch],optimalPathDoubleTouchArray[1,0:pointerDoubleTouch],optimalPathDoubleTouchArray[2,0:pointerDoubleTouch],color = 'green',s=40)
-
-
-ax.set_xlim([0,10])
-ax.set_ylim([0,20])
-ax.set_zlim([0,5])
-plt.show()
+temp = 1
+#
+# optimalPathOneTouchArray = np.zeros((3,len(optimalPath)))
+# optimalPathDoubleTouchArray = np.zeros((3,len(optimalPath)))
+# pointerOneTouch = 0
+# pointerDoubleTouch = 0
+# for i, node in enumerate(optimalPath):
+#     if node[4] == 0:
+#         optimalPathOneTouchArray[0,pointerOneTouch] = node[0]
+#         optimalPathOneTouchArray[1,pointerOneTouch] = node[1]
+#         optimalPathOneTouchArray[2,pointerOneTouch] = node[2]
+#         pointerOneTouch = pointerOneTouch + 1
+#     elif node[4] == 1:
+#         optimalPathDoubleTouchArray[0,pointerDoubleTouch] = node[0]
+#         optimalPathDoubleTouchArray[1,pointerDoubleTouch] = node[1]
+#         optimalPathDoubleTouchArray[2,pointerDoubleTouch] = node[2]
+#         pointerDoubleTouch = pointerDoubleTouch + 1
+# pointerOneTouch = pointerOneTouch -1
+# pointerDoubleTouch = pointerDoubleTouch -1

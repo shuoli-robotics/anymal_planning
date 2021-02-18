@@ -6,7 +6,7 @@ class PhaseFinalSpeed:
     def __init__(self,step_dist):
         self.step_dist = step_dist
         self.time_range = np.linspace(0.1, 1, 200, endpoint=True)
-        self.speed_range = np.linspace(0.1, 1, 200, endpoint=True)
+        self.speed_range = np.linspace(0.0, 1, 200, endpoint=True)
         self.speed_diff = np.zeros((len(self.speed_range),len(self.time_range)))
 
     def calc_vel_diff(self):
@@ -29,7 +29,7 @@ class PhaseFinalSpeed:
         xx,yy = np.meshgrid(self.time_range, self.speed_range, sparse=True)
         # h = ax.contourf(self.time_range, self.speed_range, self.speed_diff)
         axis_label = [self.time_range[0], self.time_range[-1], self.speed_range[0], self.speed_range[-1]]
-        h = ax.imshow(self.speed_diff,extent=axis_label,vmin = -2,vmax=2,aspect="auto")
+        h = ax.imshow(self.speed_diff,extent=axis_label,vmin = -5,vmax=5,aspect="auto")
         return h
 
 

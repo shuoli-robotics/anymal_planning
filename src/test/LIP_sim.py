@@ -18,7 +18,7 @@ def lip_model(state):
 sim_time = 0.5
 sim_step = 0.001
 x0 = 0.0
-v0 = 1
+v0 = 0
 
 time = np.zeros(int(sim_time/sim_step))
 states = np.zeros((len(time),2))
