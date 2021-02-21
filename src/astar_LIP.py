@@ -39,7 +39,7 @@ class ActionsBase:
 
 class AnymalAStar:
     def __init__(self, start, goal):
-        self.pointCloud = pc.CentralLake().pc
+        self.pointCloud = pc.CentralLake()
         self.start = start
         self.goal = goal
         self.initialState = (start[0],0.,start[1],0.)
@@ -54,7 +54,7 @@ class AnymalAStar:
         print("The goal node is {}".format(self.goal))
 
     def run(self):
-        # add the start point to the open list. Its g = 0, h is an estimate distance towards the goal
+        # add the start point to the open list. Its g = 0, h is the estimate distance towards the goal
         self.openList[self.start] = AnymalStateNode(self.start, 0, self.getH(self.start),self.initialState)
 
         numSearchTimes = 0
@@ -94,25 +94,29 @@ class AnymalAStar:
                     self.openList[child].vx = child_states[1]
                     self.openList[child].y = child_states[2]
                     self.openList[child].vy = child_states[3]
-
-
             else:
                 child_g, child_states = self.getG(currentNode, child, act)
-                self.openList[child] = AnymalStateNode(currentNode, child_g,self.getH(child),child_states)
-
+                child_h = self.getH(child_states)
+                self.openList[child] = AnymalStateNode(currentNode, child_g,child_h,child_states)
+                print("The mass position of child {} is ({},{}) ".format(child,child_states[0],child_states[2]))
+                print("The mass velocity of child {} is ({},{}) ".format(child, child_states[1], child_states[3]))
+                print("The g child {} is {} ".format(child, child_g))
+                print("The h child {} is {} ".format(child, child_h))
             if child == self.goal:
                 print("Found the path")
                 print(child)
                 self.closedList[child] = copy.deepcopy(self.openList[child])
                 self.openList.pop(child)
                 return True
+
         return False
 
     # This is the the heuristic of the A*. In this situation, it is the estmation distance between
     # the node and the goal. In theory, it should be less than the real distance which can help A*
     # converge to the optimal result
-    def getH(self, node):
-        return math.sqrt((node[0] - self.goal[0]) ** 2 + (node[1] - self.goal[1]) ** 2)
+    def getH(self, node_states):
+        # return math.sqrt((node[0] - self.goal[0]) ** 2 + (node[1] - self.goal[1]) ** 2)
+        return math.sqrt((node_states[0] - self.goal[0]) ** 2 + (node_states[2] - self.goal[1]) ** 2)
 
     # This function finds the node with minumum score in the open list
     # Once it is found, it will be moved to the closed list, which means we stand on this node
@@ -128,10 +132,10 @@ class AnymalAStar:
         valid = False
         child = ('nan','nan','nan')
         key = (round(currentNode[0] + action[0], 2), round(currentNode[1] + action[1], 2))
-        if key in self.pointCloud.keys():
-            if abs(currentNode[2] - self.pointCloud[key].z) < 0.2:
+        if key in self.pointCloud.pc.keys():
+            if abs(currentNode[2] - self.pointCloud.pc[key].z) < 0.2:
                 valid = True
-                child = (key[0], key[1], self.pointCloud[key].z)
+                child = (key[0], key[1], self.pointCloud.pc[key].z)
         return valid, child
 
     # This function calculate the g value of the child when there is a movement from the parent to the child
@@ -159,7 +163,7 @@ class AnymalAStar:
         error_vf = abs(math.sqrt(states_x[1] ** 2 + states_y[1] ** 2) - self.desired_vel)
         vel_cost = (error_v0 + error_vf)*self.phaseTime/2.0
 
-        value = distance
+        value = distance + vel_cost
 
         return self.closedList[parent].f + value, (states_x[0],states_x[1],states_y[0],states_y[1])
 
@@ -174,31 +178,28 @@ class AnymalAStar:
     def plot_result(self):
         fig = mlab.figure(0)
         self.pointCloud.show_point_cloud(fig)
+        self.optimalPath = self.getOptimalPath()
 
-start = (2.,1.,0.)
-goal = (2.,2.,0.)
-anyAStar = AnymalAStar(start,goal)
-anyAStar.run()
+        for node in self.optimalPath:
+            x = self.closedList[node].x
+            y = self.closedList[node].y
+            z = self.z
+            # mlab.points3d(node[0],node[1],node[2],figure=fig)
+            # mlab.points3d(x,y,z,figure=fig)
+            x_line = [node[0],x]
+            y_line = [node[1],y]
+            z_line = [node[2],z]
+            mlab.plot3d(x_line,y_line,z_line,figure=fig)
+        mlab.show()
 
 
-optimalPath = anyAStar.getOptimalPath()
+if __name__ == "__main__":
+    start = (2.,1.,0.)
+    goal = (2.,1.2,0.)
+    anyAStar = AnymalAStar(start,goal)
+    anyAStar.run()
+    optimalPath = anyAStar.getOptimalPath()
+    anyAStar.plot_result()
 
-temp = 1
-#
-# optimalPathOneTouchArray = np.zeros((3,len(optimalPath)))
-# optimalPathDoubleTouchArray = np.zeros((3,len(optimalPath)))
-# pointerOneTouch = 0
-# pointerDoubleTouch = 0
-# for i, node in enumerate(optimalPath):
-#     if node[4] == 0:
-#         optimalPathOneTouchArray[0,pointerOneTouch] = node[0]
-#         optimalPathOneTouchArray[1,pointerOneTouch] = node[1]
-#         optimalPathOneTouchArray[2,pointerOneTouch] = node[2]
-#         pointerOneTouch = pointerOneTouch + 1
-#     elif node[4] == 1:
-#         optimalPathDoubleTouchArray[0,pointerDoubleTouch] = node[0]
-#         optimalPathDoubleTouchArray[1,pointerDoubleTouch] = node[1]
-#         optimalPathDoubleTouchArray[2,pointerDoubleTouch] = node[2]
-#         pointerDoubleTouch = pointerDoubleTouch + 1
-# pointerOneTouch = pointerOneTouch -1
-# pointerDoubleTouch = pointerDoubleTouch -1
+    temp = 1
+

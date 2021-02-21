@@ -38,7 +38,9 @@ class PointCloudBase:
     def show_point_cloud(self,fig):
         X,Y = np.meshgrid(self.X,self.Y)
         mesh = mlab.mesh(X, Y, self.Z,figure = fig,color=(0.3, 0.3, 0.3))
-        mlab.show()
+        mlab.xlabel('x')
+        mlab.ylabel('y')
+        # mlab.show()
 
 
 class CentralLake(PointCloudBase):
