@@ -102,9 +102,9 @@ class AnymalAStar:
                 print("The mass velocity of child {} is ({},{}) ".format(child, child_states[1], child_states[3]))
                 print("The g child {} is {} ".format(child, child_g))
                 print("The h child {} is {} ".format(child, child_h))
-            if child == self.goal:
+            if self.isDone(child):
                 print("Found the path")
-                print(child)
+                self.finalStep = child
                 self.closedList[child] = copy.deepcopy(self.openList[child])
                 self.openList.pop(child)
                 return True
@@ -167,8 +167,14 @@ class AnymalAStar:
 
         return self.closedList[parent].f + value, (states_x[0],states_x[1],states_y[0],states_y[1])
 
+    def isDone(self,child):
+        if math.sqrt((self.openList[child].x - self.goal[0])**2 + (self.openList[child].y - self.goal[1])**2) < 0.5:
+            return True
+        else:
+            return False
+
     def getOptimalPath(self):
-        parent = self.goal
+        parent = self.finalStep
         optimalPath = [parent]
         while parent != self.start:
             parent = self.closedList[parent].parent
@@ -195,7 +201,7 @@ class AnymalAStar:
 
 if __name__ == "__main__":
     start = (2.,1.,0.)
-    goal = (2.,1.2,0.)
+    goal = (2.,1.2,0)
     anyAStar = AnymalAStar(start,goal)
     anyAStar.run()
     optimalPath = anyAStar.getOptimalPath()
