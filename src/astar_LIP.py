@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import math
 import point_cloud as pc
 from mayavi import mlab
+import logging
 
 
 class AnymalStateNode:
@@ -25,8 +26,8 @@ class AnymalStateNode:
 class ActionsBase:
     def __init__(self):
         self.actions = []
-        for deltaX in [-0.2,-0.1,0.0,0.1,0.2]:
-            for deltaY in [-0.2,-0.1,0.0,0.1,0.2]:
+        for deltaX in [-0.15,-0.1,0.0,0.1,0.15]:
+            for deltaY in [-0.15,-0.1,0.0,0.1,0.15]:
                 if deltaX ==0 and deltaY == 0:
                     continue
                 else:
@@ -46,10 +47,22 @@ class AnymalAStar:
         self.openList = {}
         self.closedList = {}
         self.actions = ActionsBase()
-        self.phaseTime = 0.5
+        self.phaseTime = 0.2
         self.z = 0.43
         self.g = 9.81
         self.desired_vel = 0.5
+
+        self.numSearchTimes = 0
+
+        self.logger = logging.getLogger('debug')
+        self.logger.setLevel(logging.INFO)
+        fh = logging.FileHandler('anyplan.log')
+        fh.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(message)s')
+        fh.setFormatter(formatter)
+        self.logger.addHandler(fh)
+        self.logTimes = 2000
+
         print("The start node is {}".format(self.start))
         print("The goal node is {}".format(self.goal))
 
@@ -62,7 +75,7 @@ class AnymalAStar:
         while len(self.openList) > 0:
             # find the minimum element and stand on it. Then, search its children
             currentNode = self.moveToMinNode()
-            numSearchTimes = numSearchTimes + 1
+            self.numSearchTimes = self.numSearchTimes + 1
             if self.searchChildren(currentNode):
                 print("A* found the path")
                 break
@@ -72,16 +85,30 @@ class AnymalAStar:
     # the open list and do the loop until we reach the goal
     def searchChildren(self, currentNode):
         # print("searchChildren is running")
-        numOfValidChildren = 0
+        child_num = -1
+
+        if self.numSearchTimes < self.logTimes:
+            self.logger.info("")
+            self.logger.info("The parent is ({} from {})  g = {}, \
+                    h = {}, f = {}".format(currentNode, \
+                                           self.closedList[currentNode].parent, \
+                                           self.closedList[currentNode].g, self.closedList[currentNode].h, \
+                                           self.closedList[currentNode].f))
 
         for act in self.actions.getPossibleActions():
+            child_num += 1
+
             actionValid, child = self.checkAction(currentNode, act)
 
             if not actionValid:
+                if self.numSearchTimes < self.logTimes:
+                    self.logger.info("The child {} ({}-{}) is invalid.) ".format(child,self.numSearchTimes,child_num))
                 continue
             # Here we have found a valid child of the current node. We need to check if this child is
             # already in the open list or closed list
             if child in self.closedList:
+                if self.numSearchTimes < self.logTimes:
+                    self.logger.info("The child {} ({}-{}) is in closed list.) ".format(child,self.numSearchTimes,child_num))
                 continue
             elif child in self.openList:
                 # Check if we need to change the child's parent
@@ -94,14 +121,37 @@ class AnymalAStar:
                     self.openList[child].vx = child_states[1]
                     self.openList[child].y = child_states[2]
                     self.openList[child].vy = child_states[3]
+
+                    if self.numSearchTimes < self.logTimes:
+                        self.logger.info("The child is {} ({}-{}) . x_m, y_m =({},{}). v_x, v_y = ({},{})) \
+                                            g = {} h = {} f = {}".format(child,self.numSearchTimes,child_num,\
+                                                                         round(self.openList[child].x,2), round(self.openList[child].y,2), \
+                                                                         round(self.openList[child].vx, 2),round(self.openList[child].vy, 2), \
+                                                                         round(self.openList[child].g,2), \
+                                                                         round(self.openList[child].h,2), \
+                                                                         round(self.openList[child].f,2)))
+                else:
+                    if self.numSearchTimes < self.logTimes:
+                        self.logger.info("The child {} ({}-{}). x_m, y_m =({},{}) v_x,v_y = ({},{}) has larger g = {}.) ".format(child, self.numSearchTimes,child_num, \
+                                                                                                               round(self.openList[child].x,2),\
+                                                                                                               round(self.openList[child].y,2),\
+                                                                                                               round(self.openList[child].vx, 2) ,\
+                                                                                                               round(self.openList[child].vy, 2) ,\
+                                                                                                               round(child_g,2)))
             else:
                 child_g, child_states = self.getG(currentNode, child, act)
                 child_h = self.getH(child_states)
                 self.openList[child] = AnymalStateNode(currentNode, child_g,child_h,child_states)
-                print("The mass position of child {} is ({},{}) ".format(child,child_states[0],child_states[2]))
-                print("The mass velocity of child {} is ({},{}) ".format(child, child_states[1], child_states[3]))
-                print("The g child {} is {} ".format(child, child_g))
-                print("The h child {} is {} ".format(child, child_h))
+
+                if self.numSearchTimes < self.logTimes:
+                        self.logger.info("The child is {} ({}-{}) . x_m, y_m =({},{}). v_x, v_y = ({},{})) \
+                                            g = {} h = {} f = {}".format(child,self.numSearchTimes,child_num,\
+                                                                         round(self.openList[child].x,2), round(self.openList[child].y,2), \
+                                                                         round(self.openList[child].vx, 2),round(self.openList[child].vy, 2), \
+                                                                         round(self.openList[child].g,2), \
+                                                                         round(self.openList[child].h,2), \
+                                                                         round(self.openList[child].f,2)))
+
             if self.isDone(child):
                 print("Found the path")
                 self.finalStep = child
@@ -130,7 +180,7 @@ class AnymalAStar:
     # This function checks if the action can guide the robot from current node to a feasible node in the map
     def checkAction(self, currentNode, action):
         valid = False
-        child = ('nan','nan','nan')
+        child = (currentNode[0]+action[0],currentNode[1]+action[1],0)
         key = (round(currentNode[0] + action[0], 2), round(currentNode[1] + action[1], 2))
         if key in self.pointCloud.pc.keys():
             if abs(currentNode[2] - self.pointCloud.pc[key].z) < 0.2:
@@ -200,8 +250,8 @@ class AnymalAStar:
 
 
 if __name__ == "__main__":
-    start = (2.,1.,0.)
-    goal = (2.,1.2,0)
+    start = (2.,1.0,0.)
+    goal = (2.,5.0,0)
     anyAStar = AnymalAStar(start,goal)
     anyAStar.run()
     optimalPath = anyAStar.getOptimalPath()

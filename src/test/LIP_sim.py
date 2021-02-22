@@ -4,7 +4,7 @@ import math
 
 g = 9.8
 z = 0.43
-p_x = 0.1
+p_x = -0.1
 def lip_model(state):
     A = np.array([[0,1],
                   [g/z,0]])
@@ -15,7 +15,7 @@ def lip_model(state):
 
 
 
-sim_time = 0.5
+sim_time = 0.3
 sim_step = 0.001
 x0 = 0.0
 v0 = 0
