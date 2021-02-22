@@ -26,8 +26,8 @@ class AnymalStateNode:
 class ActionsBase:
     def __init__(self):
         self.actions = []
-        for deltaX in [-0.15,-0.1,0.0,0.1,0.15]:
-            for deltaY in [-0.15,-0.1,0.0,0.1,0.15]:
+        for deltaX in [0]:
+            for deltaY in [-0.3,-0.25,-0.2,-0.15,-0.1,-0.05,0.0,0.05,0.1,0.15,0.2,0.25,0.3]:
                 if deltaX ==0 and deltaY == 0:
                     continue
                 else:
@@ -98,9 +98,12 @@ class AnymalAStar:
         for act in self.actions.getPossibleActions():
             child_num += 1
 
-            actionValid, child = self.checkAction(currentNode, act)
+            if self.numSearchTimes == 2 and child_num == 5:
+                temp = 1
 
-            if not actionValid:
+            action_valid, child,child_states, child_g = self.checkAction(currentNode, act)
+
+            if not action_valid:
                 if self.numSearchTimes < self.logTimes:
                     self.logger.info("The child {} ({}-{}) is invalid.) ".format(child,self.numSearchTimes,child_num))
                 continue
@@ -112,7 +115,6 @@ class AnymalAStar:
                 continue
             elif child in self.openList:
                 # Check if we need to change the child's parent
-                child_g,child_states = self.getG(currentNode, child, act)
                 if self.openList[child].g > child_g:
                     self.openList[child].parent = currentNode
                     self.openList[child].g = child_g
@@ -139,7 +141,6 @@ class AnymalAStar:
                                                                                                                round(self.openList[child].vy, 2) ,\
                                                                                                                round(child_g,2)))
             else:
-                child_g, child_states = self.getG(currentNode, child, act)
                 child_h = self.getH(child_states)
                 self.openList[child] = AnymalStateNode(currentNode, child_g,child_h,child_states)
 
@@ -181,12 +182,48 @@ class AnymalAStar:
     def checkAction(self, currentNode, action):
         valid = False
         child = (currentNode[0]+action[0],currentNode[1]+action[1],0)
+        child_states = []
+        child_g = 9999
         key = (round(currentNode[0] + action[0], 2), round(currentNode[1] + action[1], 2))
         if key in self.pointCloud.pc.keys():
             if abs(currentNode[2] - self.pointCloud.pc[key].z) < 0.2:
-                valid = True
-                child = (key[0], key[1], self.pointCloud.pc[key].z)
-        return valid, child
+                child = (key[0], key[1],self.pointCloud.pc[key].z)
+                child_g,child_states,valid = self.calc_mass_point_state(currentNode,child)
+        return valid, child,child_states, child_g
+
+    def calc_mass_point_state(self,parent,child):
+        self.g = 9.81
+        self.z = 0.43
+        p_x = child[0]
+        p_y = child[1]
+        omega = math.sqrt(self.g / self.z)
+        A = np.array([[np.cosh(omega * self.phaseTime), 1 / omega * np.sinh(omega * self.phaseTime)],
+                      [omega * np.sinh(omega * self.phaseTime), np.cosh(omega * self.phaseTime)]])
+        B = np.array([1 - np.cosh(omega * self.phaseTime), -omega * np.sinh(omega * self.phaseTime)])
+
+        x0 = np.array([self.closedList[parent].x, self.closedList[parent].vx])
+        y0 = np.array([self.closedList[parent].y, self.closedList[parent].vy])
+        states_x = A.dot(x0) + B * p_x
+        states_y = A.dot(y0) + B * p_y
+
+        distance = math.sqrt(
+            (self.closedList[parent].x - states_x[0]) ** 2 + (self.closedList[parent].y - states_y[0]) ** 2)
+
+        error_v0 = abs(math.sqrt(self.closedList[parent].vx ** 2 + self.closedList[parent].vy ** 2) - self.desired_vel)
+        error_vf = abs(math.sqrt(states_x[1] ** 2 + states_y[1] ** 2) - self.desired_vel)
+        vel_cost = (error_v0 + error_vf) * self.phaseTime / 2.0
+
+        value = distance + math.sqrt(math.sqrt(states_x[1] ** 2 + states_y[1] ** 2))
+
+        pole_length = math.sqrt((p_x-states_x[0])**2 + (p_y-states_x[1])**2)
+
+        if pole_length > 2 or max(abs(states_x[1]),abs(abs(states_y[1]))) > 1.5:
+            valid  = False
+        else:
+            valid = True
+
+        return self.closedList[parent].f + value, (states_x[0], states_x[1], states_y[0], states_y[1]), valid
+
 
     # This function calculate the g value of the child when there is a movement from the parent to the child
     # When the action is once-touch, the score is just distance + covariance
