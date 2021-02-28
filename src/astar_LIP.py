@@ -22,8 +22,8 @@ class AnymalStateNode:
 class ActionsBase:
     def __init__(self):
         self.actions = []
-        for deltaX in [-0.3,-0.2,-0.1,-0.05,0.0,0.05,0.1,0.2,0.3]:
-            for deltaY in [-0.3,-0.2,-0.1,-0.05,0.0,0.05,0.1,0.2,0.3]:
+        for deltaX in [0]:
+            for deltaY in [-0.2,-0.1,0.0,0.1,0.2]:
                 if deltaX ==0 and deltaY == 0:
                     continue
                 else:
@@ -52,7 +52,7 @@ class AnymalAStar:
 
         # A* weights
         self.omega_distance = 1.0
-        self.omega_speed = 10
+        self.omega_speed = 0.1
         self.omega_time = 0
 
         self.logger = logging.getLogger('debug')
@@ -184,7 +184,7 @@ class AnymalAStar:
 
         # todo: remaining time is wrong.
 
-        return self.omega_distance * remaining_distance + self.omega_time * remaining_time + self.omega_speed* error_vf
+        return self.omega_distance * remaining_distance
 
     # This function finds the node with minumum score in the open list
     # Once it is found, it will be moved to the closed list, which means we stand on this node
@@ -238,8 +238,8 @@ class AnymalAStar:
 
         error_vf = abs(math.sqrt(child[4] ** 2 + child[6] ** 2) - self.desired_vel)
 
-        # delta_g = self.omega_distance * distance + self.omega_speed * error_vf + self.omega_time * self.phaseTime
-        delta_g = self.omega_distance * distance
+        delta_g = self.omega_distance * distance + self.omega_speed * error_vf + self.omega_time * self.phaseTime
+        # delta_g = self.omega_distance * distance
 
         pole_length_0 = math.sqrt((parent[3] - child[0])**2 + (parent[5] - child[1])**2)
         pole_length_f = math.sqrt((child[3] - child[0]) ** 2 + (child[5] - child[1]) ** 2)
@@ -300,11 +300,20 @@ class AnymalAStar:
         return optimalPath
 
     def plot_result(self):
+        fig1, ax = plt.subplots(2,2)
+
         fig = mlab.figure(0)
         self.pointCloud.show_point_cloud(fig)
         self.optimalPath = self.getOptimalPath()
 
-        for node in self.optimalPath:
+        zmp_x = np.zeros(len(self.optimalPath))
+        zmp_y = np.zeros(len(self.optimalPath))
+        mass_point_x = np.zeros(len(self.optimalPath))
+        mass_point_y = np.zeros(len(self.optimalPath))
+        mass_point_vx = np.zeros(len(self.optimalPath))
+        mass_point_vy = np.zeros(len(self.optimalPath))
+
+        for i,node in enumerate(self.optimalPath):
             x = node[3]
             y = node[5]
             z = self.z
@@ -313,13 +322,47 @@ class AnymalAStar:
             x_line = [node[0],x]
             y_line = [node[1],y]
             z_line = [node[2],z]
+
+            mass_point_x[i] = x
+            mass_point_y[i] = y
+            mass_point_vx[i] = node[4]
+            mass_point_vy[i] = node[6]
+            zmp_x[i] = node[0]
+            zmp_y[i] = node[1]
             mlab.plot3d(x_line,y_line,z_line,figure=fig)
+
+        np.flip(mass_point_x)
+        np.flip(zmp_x)
+        np.flip(mass_point_y)
+        np.flip(zmp_y)
+        np.flip(mass_point_vx)
+        np.flip(mass_point_vy)
+
+
+        ax[0,0].plot(mass_point_x,label='mass point')
+        ax[0,0].plot(zmp_x,'^',label='zmp')
+        ax[0,0].set_ylabel('x[m]')
+
+        ax[0, 1].plot(mass_point_y)
+        ax[0, 1].plot(zmp_y, '^')
+        ax[0, 1].set_ylabel('y[m]')
+
+        ax[1,0].plot(mass_point_vx,label='mass point')
+        ax[1,0].set_ylabel('v_x[m/s]')
+        ax[1,0].set_xlabel('# of step')
+
+        ax[1,1].plot(mass_point_vy,label='mass point')
+        ax[1,1].set_ylabel('v_y[m/s]')
+        ax[1,1].set_xlabel('# of step')
+
+        ax[0,0].legend(loc='best')
+        plt.show()
         mlab.show()
 
 
 if __name__ == "__main__":
-    zmp_0 = (1.0,1.0,0.)
-    zmp_f = (2.5,2.5,0)
+    zmp_0 = (2.0,1.0,0.)
+    zmp_f = (2.0,2.5,0)
     anyAStar = AnymalAStar(zmp_0,zmp_f)
     anyAStar.run()
     optimalPath = anyAStar.getOptimalPath()
