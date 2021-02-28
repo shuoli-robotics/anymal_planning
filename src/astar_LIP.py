@@ -323,20 +323,13 @@ class AnymalAStar:
             y_line = [node[1],y]
             z_line = [node[2],z]
 
-            mass_point_x[i] = x
-            mass_point_y[i] = y
-            mass_point_vx[i] = node[4]
-            mass_point_vy[i] = node[6]
-            zmp_x[i] = node[0]
-            zmp_y[i] = node[1]
+            mass_point_x[len(self.optimalPath)-1-i] = x
+            mass_point_y[len(self.optimalPath)-1-i] = y
+            mass_point_vx[len(self.optimalPath)-1-i] = node[4]
+            mass_point_vy[len(self.optimalPath)-1-i] = node[6]
+            zmp_x[len(self.optimalPath)-1-i] = node[0]
+            zmp_y[len(self.optimalPath)-1-i] = node[1]
             mlab.plot3d(x_line,y_line,z_line,figure=fig)
-
-        np.flip(mass_point_x)
-        np.flip(zmp_x)
-        np.flip(mass_point_y)
-        np.flip(zmp_y)
-        np.flip(mass_point_vx)
-        np.flip(mass_point_vy)
 
 
         ax[0,0].plot(mass_point_x,label='mass point')
@@ -357,7 +350,7 @@ class AnymalAStar:
 
         ax[0,0].legend(loc='best')
         plt.show()
-        mlab.show()
+        # mlab.show()
 
 
 if __name__ == "__main__":
