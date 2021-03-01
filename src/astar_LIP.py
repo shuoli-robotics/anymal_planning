@@ -11,18 +11,18 @@ import logging
 
 
 class AnymalStateNode:
-    def __init__(self,parentIndex,g,h,time):
+    def __init__(self,parentIndex,g,h,index):
         self.parent = parentIndex
         self.g = g
         self.h = h
         self.f = g + h
-        self.time = time
+        self.index = index
 
 
 class ActionsBase:
     def __init__(self):
         self.actions = []
-        for deltaX in [0]:
+        for deltaX in [-0.2,-0.1,0.0,0.1,0.2]:
             for deltaY in [-0.2,-0.1,0.0,0.1,0.2]:
                 if deltaX ==0 and deltaY == 0:
                     continue
@@ -52,6 +52,7 @@ class AnymalAStar:
 
         # A* weights
         self.omega_distance = 1.0
+        self.omega_h_distance = 3.0
         self.omega_speed = 0.1
         self.omega_time = 0
 
@@ -69,7 +70,7 @@ class AnymalAStar:
 
     def run(self):
         # add the start point to the open list. Its g = 0, h is the estimate distance towards the goal
-        self.openList[self.start] = AnymalStateNode(parentIndex=self.start, g=0, h=self.getH(self.start),time=0.0)
+        self.openList[self.start] = AnymalStateNode(parentIndex=self.start, g=0, h=self.getH(self.start),index="0-0")
 
         numSearchTimes = 0
 
@@ -92,11 +93,11 @@ class AnymalAStar:
 
         if self.numSearchTimes < self.logTimes:
             self.logger.info("")
-            self.logger.info("The parent is ({} from {})  g = {}, \
-                    h = {}, f = {}".format(currentNode, \
-                                           self.closedList[currentNode].parent, \
-                                           self.closedList[currentNode].g, self.closedList[currentNode].h, \
-                                           self.closedList[currentNode].f))
+            self.logger.info("The current node is {} from {}            g = {}, \
+                    h = {}, f = {}".format(self.closedList[currentNode].index, \
+                                           self.closedList[self.closedList[currentNode].parent].index, \
+                                           round(self.closedList[currentNode].g,2), round(self.closedList[currentNode].h,2), \
+                                           round(self.closedList[currentNode].f,2)))
 
         for act in self.actions.getPossibleActions():
             self.child_num += 1
@@ -108,13 +109,13 @@ class AnymalAStar:
 
             if not action_valid:
                 if self.numSearchTimes < self.logTimes:
-                    self.logger.info("The child {} ({}-{}) is invalid.) ".format(child,self.numSearchTimes,self.child_num))
+                    self.logger.info("The child {}-{} is invalid.".format(self.numSearchTimes,self.child_num))
             else:
                 # Here we have found a valid child of the current node. We need to check if this child is
                 # already in the open list or closed list
                 if child in self.closedList:
                     if self.numSearchTimes < self.logTimes:
-                        self.logger.info("The child {} ({}-{}) is in closed list.) ".format(child,self.numSearchTimes,self.child_num))
+                        self.logger.info("The child {}-{} is in closed list.".format(self.numSearchTimes,self.child_num))
                     continue
                 elif child in self.openList:
                     # Check if we need to change the child's parent
@@ -122,11 +123,12 @@ class AnymalAStar:
                         self.openList[child].parent = currentNode
                         self.openList[child].g = child_g
                         self.openList[child].f = self.openList[child].g + self.openList[child].h
-                        self.openList[child].time = self.closedList[currentNode].time + self.phaseTime
+                        self.openList[child].index = str(self.numSearchTimes)+'-'+str(self.child_num)
 
                         if self.numSearchTimes < self.logTimes:
-                            self.logger.info("The child is {} ({}-{}) . x_m, y_m =({},{}). v_x, v_y = ({},{})) \
-                                                g = {} h = {} f = {}".format(child,self.numSearchTimes,self.child_num,\
+                            self.logger.info("The child {} has smaller g. x_zmp,y_zmp = ({},{}). x_m, y_m =({},{}). v_x, v_y = ({},{})) \
+                                                g = {} h = {} f = {}".format(self.openList[child].index,\
+                                                                             child[0],child[1],\
                                                                              round(child[3],2), round(child[5],2), \
                                                                              round(child[4], 2),round(child[6], 2), \
                                                                              round(self.openList[child].g,2), \
@@ -134,21 +136,16 @@ class AnymalAStar:
                                                                              round(self.openList[child].f,2)))
                     else:
                         if self.numSearchTimes < self.logTimes:
-                            self.logger.info("The child is {} ({}-{}) . x_m, y_m =({},{}). v_x, v_y = ({},{})) \
-                                                g = {} h = {} f = {}".format(child,self.numSearchTimes,self.child_num,\
-                                                                             round(child[3],2), round(child[5],2), \
-                                                                             round(child[4], 2),round(child[6], 2), \
-                                                                             round(self.openList[child].g,2), \
-                                                                             round(self.openList[child].h,2), \
-                                                                             round(self.openList[child].f,2)))
+                            self.logger.info("The child {}-{} has larger g".format(self.numSearchTimes,self.child_num))
                 else:
                     child_h = self.getH(child)
-                    time = self.closedList[currentNode].time + self.phaseTime
-                    self.openList[child] = AnymalStateNode(parentIndex=currentNode, g = child_g,h = child_h,time = time)
+                    index = str(self.numSearchTimes)+'-'+str(self.child_num)
+                    self.openList[child] = AnymalStateNode(parentIndex=currentNode, g = child_g,h = child_h,index = index)
 
                     if self.numSearchTimes < self.logTimes:
-                            self.logger.info("The child is {} ({}-{}) . x_m, y_m =({},{}). v_x, v_y = ({},{})) \
-                                                g = {} h = {} f = {}".format(child,self.numSearchTimes,self.child_num,\
+                            self.logger.info("The child is {}. x_zmp,y_zmp = ({},{}). x_m, y_m =({},{}). v_x, v_y = ({},{})) \
+                                                g = {} h = {} f = {}".format(self.openList[child].index, \
+                                                                             child[0], child[1], \
                                                                              round(child[3],2), round(child[5],2), \
                                                                              round(child[4], 2),round(child[6], 2), \
                                                                              round(self.openList[child].g,2), \
@@ -184,7 +181,7 @@ class AnymalAStar:
 
         # todo: remaining time is wrong.
 
-        return self.omega_distance * remaining_distance
+        return self.omega_h_distance * remaining_distance
 
     # This function finds the node with minumum score in the open list
     # Once it is found, it will be moved to the closed list, which means we stand on this node
@@ -301,6 +298,7 @@ class AnymalAStar:
 
     def plot_result(self):
         fig1, ax = plt.subplots(2,2)
+        fig2, ax2 = plt.subplots(1, 2)
 
         fig = mlab.figure(0)
         self.pointCloud.show_point_cloud(fig)
@@ -331,6 +329,17 @@ class AnymalAStar:
             zmp_y[len(self.optimalPath)-1-i] = node[1]
             mlab.plot3d(x_line,y_line,z_line,figure=fig)
 
+        zmp_x_open_list = np.zeros(len(self.openList))
+        zmp_y_open_list = np.zeros(len(self.openList))
+        zmp_x_closed_list = np.zeros(len(self.closedList))
+        zmp_y_closed_list = np.zeros(len(self.closedList))
+        for i,node in enumerate(self.openList):
+            zmp_x_open_list[i] = node[0]
+            zmp_y_open_list[i] = node[1]
+
+        for i,node in enumerate(self.closedList):
+            zmp_x_closed_list[i] = node[0]
+            zmp_y_closed_list[i] = node[1]
 
         ax[0,0].plot(mass_point_x,label='mass point')
         ax[0,0].plot(zmp_x,'^',label='zmp')
@@ -347,15 +356,22 @@ class AnymalAStar:
         ax[1,1].plot(mass_point_vy,label='mass point')
         ax[1,1].set_ylabel('v_y[m/s]')
         ax[1,1].set_xlabel('# of step')
-
         ax[0,0].legend(loc='best')
+
+        ax2[0].plot(zmp_x_open_list,zmp_y_open_list,'gs')
+        ax2[1].plot(zmp_x_closed_list, zmp_y_closed_list, 'rs')
+        ax2[0].set_title('open list')
+        ax2[0].set_xlabel('x[m]')
+        ax2[0].set_ylabel('y[m]')
+        ax2[1].set_title('closed list')
+        ax2[1].set_xlabel('x[m]')
         plt.show()
-        # mlab.show()
+        mlab.show()
 
 
 if __name__ == "__main__":
     zmp_0 = (2.0,1.0,0.)
-    zmp_f = (2.0,2.5,0)
+    zmp_f = (9.0,9.0,0)
     anyAStar = AnymalAStar(zmp_0,zmp_f)
     anyAStar.run()
     optimalPath = anyAStar.getOptimalPath()
