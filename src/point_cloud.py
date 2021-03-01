@@ -50,7 +50,7 @@ class CentralLake(PointCloudBase):
                 x = round(x, self.mapDigiti)
                 y = round(y, self.mapDigiti)
                 if math.sqrt((x-self.center[0])**2 + (y-self.center[1])**2) < 2:
-                    self.Z[i,j] = -0.1
+                    self.Z[i,j] = -1
                     self.Sigma[i,j] = 1.0
                     self.pc[(x, y)].z = self.Z[i, j]
                     self.pc[(x, y)].sigma = self.Sigma[i, j]

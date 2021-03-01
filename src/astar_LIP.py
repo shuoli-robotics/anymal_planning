@@ -22,8 +22,8 @@ class AnymalStateNode:
 class ActionsBase:
     def __init__(self):
         self.actions = []
-        for deltaX in [-0.2,-0.1,0.0,0.1,0.2]:
-            for deltaY in [-0.2,-0.1,0.0,0.1,0.2]:
+        for deltaX in [-0.3,-0.2,-0.15,-0.1,-0.5,0.0,0.5,0.1,0.15,0.2,0.3]:
+            for deltaY in [-0.3,-0.2,-0.15,-0.1,-0.5,0.0,0.5,0.1,0.15,0.2,0.3]:
                 if deltaX ==0 and deltaY == 0:
                     continue
                 else:
@@ -45,15 +45,15 @@ class AnymalAStar:
         self.phaseTime = 0.2
         self.z = 0.43
         self.g = 9.81
-        self.desired_vel = 0.5
+        self.desired_vel = 0.2
 
         self.numSearchTimes = 0
         self.child_num = -1
 
         # A* weights
         self.omega_distance = 1.0
-        self.omega_h_distance = 3.0
-        self.omega_speed = 0.1
+        self.omega_h_distance = 5.0
+        self.omega_speed = 0.5
         self.omega_time = 0
 
         self.logger = logging.getLogger('debug')
