@@ -45,7 +45,7 @@ class AnymalAStar:
         self.phaseTime = 0.2
         self.z = 0.43
         self.g = 9.81
-        self.desired_vel = 0.2
+        self.desired_vel = 0.5
 
         self.numSearchTimes = 0
         self.child_num = -1
@@ -53,7 +53,7 @@ class AnymalAStar:
         # A* weights
         self.omega_distance = 1.0
         self.omega_h_distance = 5.0
-        self.omega_speed = 0.5
+        self.omega_speed = 0.2
         self.omega_time = 0
 
         self.logger = logging.getLogger('debug')
@@ -64,6 +64,7 @@ class AnymalAStar:
         fh.setFormatter(formatter)
         self.logger.addHandler(fh)
         self.logTimes = 2000
+        self.log_flag = False
 
         print("The start node is {}".format(self.start))
         print("The goal node is {}".format(self.goal))
@@ -91,7 +92,7 @@ class AnymalAStar:
 
 
 
-        if self.numSearchTimes < self.logTimes:
+        if self.numSearchTimes < self.logTimes and self.log_flag:
             self.logger.info("")
             self.logger.info("The current node is {} from {}            g = {}, \
                     h = {}, f = {}".format(self.closedList[currentNode].index, \
@@ -108,13 +109,13 @@ class AnymalAStar:
             action_valid, child, child_g = self.checkAction(currentNode, act)
 
             if not action_valid:
-                if self.numSearchTimes < self.logTimes:
+                if self.numSearchTimes < self.logTimes and self.log_flag:
                     self.logger.info("The child {}-{} is invalid.".format(self.numSearchTimes,self.child_num))
             else:
                 # Here we have found a valid child of the current node. We need to check if this child is
                 # already in the open list or closed list
                 if child in self.closedList:
-                    if self.numSearchTimes < self.logTimes:
+                    if self.numSearchTimes < self.logTimes and self.log_flag:
                         self.logger.info("The child {}-{} is in closed list.".format(self.numSearchTimes,self.child_num))
                     continue
                 elif child in self.openList:
@@ -135,14 +136,14 @@ class AnymalAStar:
                                                                              round(self.openList[child].h,2), \
                                                                              round(self.openList[child].f,2)))
                     else:
-                        if self.numSearchTimes < self.logTimes:
+                        if self.numSearchTimes < self.logTimes and self.log_flag:
                             self.logger.info("The child {}-{} has larger g".format(self.numSearchTimes,self.child_num))
                 else:
                     child_h = self.getH(child)
                     index = str(self.numSearchTimes)+'-'+str(self.child_num)
                     self.openList[child] = AnymalStateNode(parentIndex=currentNode, g = child_g,h = child_h,index = index)
 
-                    if self.numSearchTimes < self.logTimes:
+                    if self.numSearchTimes < self.logTimes and self.log_flag:
                             self.logger.info("The child is {}. x_zmp,y_zmp = ({},{}). x_m, y_m =({},{}). v_x, v_y = ({},{})) \
                                                 g = {} h = {} f = {}".format(self.openList[child].index, \
                                                                              child[0], child[1], \
@@ -233,9 +234,11 @@ class AnymalAStar:
         distance = math.sqrt(
             (parent[3] - child[3]) ** 2 + (parent[5] - child[5]) ** 2)
 
+        error_v0 = abs(math.sqrt(child[3] ** 2 + child[5] ** 2) - self.desired_vel)
         error_vf = abs(math.sqrt(child[4] ** 2 + child[6] ** 2) - self.desired_vel)
+        sum_error_v = (error_v0 + error_vf) * self.phaseTime / 2.0
 
-        delta_g = self.omega_distance * distance + self.omega_speed * error_vf + self.omega_time * self.phaseTime
+        delta_g = self.omega_distance * distance + self.omega_speed * sum_error_v
         # delta_g = self.omega_distance * distance
 
         pole_length_0 = math.sqrt((parent[3] - child[0])**2 + (parent[5] - child[1])**2)
@@ -245,7 +248,7 @@ class AnymalAStar:
             temp = 1
 
 
-        if max(pole_length_0,pole_length_f) > 3 or max(abs(child[4]),abs(child[6])) > 1.5:
+        if max(pole_length_0,pole_length_f) > 1 or max(abs(child[4]),abs(child[6])) > 1.5:
             valid  = False
         else:
             valid = True
