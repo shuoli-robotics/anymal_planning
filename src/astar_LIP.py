@@ -52,8 +52,8 @@ class AnymalAStar:
 
         # A* weights
         self.omega_distance = 1.0
-        self.omega_h_distance = 5.0
-        self.omega_speed = 0.0
+        self.omega_h_distance = 2.0
+        self.omega_speed = 0
         self.omega_time = 0
 
         self.logger = logging.getLogger('debug')
@@ -78,10 +78,16 @@ class AnymalAStar:
         while len(self.openList) > 0:
             # find the minimum element and stand on it. Then, search its children
             currentNode = self.moveToMinNode()
-            self.numSearchTimes = self.numSearchTimes + 1
-            if self.searchChildren(currentNode):
-                print("A* found the path")
+
+            if self.isDone(currentNode):
+                print("Found the path")
+                self.finalStep = currentNode
                 break
+            else:
+                self.numSearchTimes = self.numSearchTimes + 1
+                self.searchChildren(currentNode)
+
+
         # print(self.closedList)
 
     # Based on current node, we search its possible children (feasible nodes) and add valid children to
@@ -153,12 +159,12 @@ class AnymalAStar:
                                                                              round(self.openList[child].h,2), \
                                                                              round(self.openList[child].f,2)))
 
-                if self.isDone(child):
-                    print("Found the path")
-                    self.finalStep = child
-                    self.closedList[child] = copy.deepcopy(self.openList[child])
-                    self.openList.pop(child)
-                    return True
+                # if self.isDone(child):
+                #     print("Found the path")
+                #     self.finalStep = child
+                #     self.closedList[child] = copy.deepcopy(self.openList[child])
+                #     self.openList.pop(child)
+                #     return True
 
         return False
 
@@ -276,7 +282,8 @@ class AnymalAStar:
         return self.closedList[parent].f + value, (states_x[0],states_x[1],states_y[0],states_y[1])
 
     def isDone(self,child):
-        if math.sqrt((child[3] - self.goal[0])**2 + (child[5] - self.goal[1])**2) < 0.2:
+        if math.sqrt((child[0] - self.goal[0])**2 + (child[1] - self.goal[1])**2) < 0.2 and \
+                math.sqrt((child[3] - self.goal[0])**2 + (child[5] - self.goal[1])**2) < 0.2 :
             return True
         else:
             return False
@@ -364,7 +371,7 @@ class AnymalAStar:
 
 if __name__ == "__main__":
     zmp_0 = (2.0,1.0,0.)
-    zmp_f = (9.0,9,0)
+    zmp_f = (9.0,8,0)
     anyAStar = AnymalAStar(zmp_0,zmp_f)
     anyAStar.run()
     optimalPath = anyAStar.getOptimalPath()
