@@ -22,8 +22,8 @@ class AnymalStateNode:
 class ActionsBase:
     def __init__(self):
         self.actions = []
-        for deltaX in [-0.3,-0.2,-0.15,-0.1,-0.5,0.0,0.5,0.1,0.15,0.2,0.3]:
-            for deltaY in [-0.3,-0.2,-0.15,-0.1,-0.5,0.0,0.5,0.1,0.15,0.2,0.3]:
+        for deltaX in [-0.3,-0.2,-0.15,-0.1,-0.05,0.0,0.05,0.1,0.15,0.2,0.3]:
+            for deltaY in [-0.3,-0.2,-0.15,-0.1,-0.05,0.0,0.05,0.1,0.15,0.2,0.3]:
                 if deltaX ==0 and deltaY == 0:
                     continue
                 else:
@@ -42,18 +42,18 @@ class AnymalAStar:
         self.openList = {}
         self.closedList = {}
         self.actions = ActionsBase()
-        self.phaseTime = 0.2
+        self.phaseTime = 0.3
         self.z = 0.43
         self.g = 9.81
-        self.desired_vel = 0.5
+        self.desired_vel = 0.3
 
         self.numSearchTimes = 0
         self.child_num = -1
 
         # A* weights
         self.omega_distance = 1.0
-        self.omega_h_distance = 3.0
-        self.omega_speed = 0.3
+        self.omega_h_distance = 5.0
+        self.omega_speed = 0.2
         self.omega_time = 0
 
         self.logger = logging.getLogger('debug')
@@ -171,16 +171,6 @@ class AnymalAStar:
         # (zmp_x  zmp_y   zmp_z   x  v_x  y  v_y)
 
         remaining_distance = math.sqrt((node[3] - self.goal[0]) ** 2 + (node[5] - self.goal[1]) ** 2)
-
-        velocity = math.sqrt(node[4]**2 + node[6]**2)
-        if abs(velocity) < 0.1:
-            velocity = 0.1
-
-        remaining_time = remaining_distance / velocity
-
-        error_vf = abs(velocity - self.desired_vel)
-
-        # todo: remaining time is wrong.
 
         return self.omega_h_distance * remaining_distance
 
