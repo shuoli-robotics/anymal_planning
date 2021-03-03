@@ -45,7 +45,7 @@ class AnymalAStar:
         self.phaseTime = 0.3
         self.z = 0.43
         self.g = 9.81
-        self.desired_vel = 0.3
+        self.desired_vel = 0.0
 
         self.numSearchTimes = 0
         self.child_num = -1
@@ -238,7 +238,7 @@ class AnymalAStar:
             temp = 1
 
 
-        if max(pole_length_0,pole_length_f) > 1 or max(abs(child[4]),abs(child[6])) > 1:
+        if max(pole_length_0,pole_length_f) > 1 or max(abs(child[4]),abs(child[6])) > 0.5:
             valid  = False
         else:
             valid = True
