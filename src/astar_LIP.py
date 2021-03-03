@@ -45,7 +45,7 @@ class AnymalAStar:
         self.phaseTime = 0.3
         self.z = 0.43
         self.g = 9.81
-        self.desired_vel = 0.0
+        self.desired_vel = 0.4
 
         self.numSearchTimes = 0
         self.child_num = -1
@@ -53,7 +53,7 @@ class AnymalAStar:
         # A* weights
         self.omega_distance = 1.0
         self.omega_h_distance = 5.0
-        self.omega_speed = 0.2
+        self.omega_speed = 0.0
         self.omega_time = 0
 
         self.logger = logging.getLogger('debug')
@@ -64,7 +64,7 @@ class AnymalAStar:
         fh.setFormatter(formatter)
         self.logger.addHandler(fh)
         self.logTimes = 2000
-        self.log_flag = False
+        self.log_flag = True
 
         print("The start node is {}".format(self.start))
         print("The goal node is {}".format(self.goal))
@@ -238,7 +238,7 @@ class AnymalAStar:
             temp = 1
 
 
-        if max(pole_length_0,pole_length_f) > 1 or max(abs(child[4]),abs(child[6])) > 0.5:
+        if max(pole_length_0,pole_length_f) > 1.0 or max(abs(child[4]),abs(child[6])) > 0.6:
             valid  = False
         else:
             valid = True
@@ -276,7 +276,7 @@ class AnymalAStar:
         return self.closedList[parent].f + value, (states_x[0],states_x[1],states_y[0],states_y[1])
 
     def isDone(self,child):
-        if math.sqrt((child[3] - self.goal[0])**2 + (child[5] - self.goal[1])**2) < 0.5:
+        if math.sqrt((child[3] - self.goal[0])**2 + (child[5] - self.goal[1])**2) < 0.2:
             return True
         else:
             return False
@@ -364,7 +364,7 @@ class AnymalAStar:
 
 if __name__ == "__main__":
     zmp_0 = (2.0,1.0,0.)
-    zmp_f = (9.0,9.0,0)
+    zmp_f = (9.0,9,0)
     anyAStar = AnymalAStar(zmp_0,zmp_f)
     anyAStar.run()
     optimalPath = anyAStar.getOptimalPath()
