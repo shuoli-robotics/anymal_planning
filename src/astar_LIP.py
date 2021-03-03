@@ -52,8 +52,8 @@ class AnymalAStar:
 
         # A* weights
         self.omega_distance = 1.0
-        self.omega_h_distance = 5.0
-        self.omega_speed = 0.2
+        self.omega_h_distance = 3.0
+        self.omega_speed = 0.3
         self.omega_time = 0
 
         self.logger = logging.getLogger('debug')
@@ -248,7 +248,7 @@ class AnymalAStar:
             temp = 1
 
 
-        if max(pole_length_0,pole_length_f) > 1 or max(abs(child[4]),abs(child[6])) > 1.5:
+        if max(pole_length_0,pole_length_f) > 1 or max(abs(child[4]),abs(child[6])) > 1:
             valid  = False
         else:
             valid = True
