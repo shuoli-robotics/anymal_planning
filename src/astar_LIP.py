@@ -52,7 +52,7 @@ class AnymalAStar:
 
         # A* weights
         self.omega_distance = 1.0
-        self.omega_h_distance = 2.0
+        self.omega_h_distance = 4.0
         self.omega_speed = 0
         self.omega_time = 0
 
@@ -227,14 +227,16 @@ class AnymalAStar:
 
         child = next_zmp + (round(states_x[0],1), round(states_x[1],1), round(states_y[0],1), round(states_y[1],1))
 
-        distance = math.sqrt(
+        distance_mass_point = math.sqrt(
             (parent[3] - child[3]) ** 2 + (parent[5] - child[5]) ** 2)
+
+        distance_zmp = math.sqrt((parent[0] - child[0]) ** 2 + (parent[1] - child[1]) ** 2)
 
         error_v0 = abs(math.sqrt(child[3] ** 2 + child[5] ** 2) - self.desired_vel)
         error_vf = abs(math.sqrt(child[4] ** 2 + child[6] ** 2) - self.desired_vel)
         sum_error_v = (error_v0 + error_vf) * self.phaseTime / 2.0
 
-        delta_g = self.omega_distance * distance + self.omega_speed * sum_error_v
+        delta_g = self.omega_distance * (distance_mass_point + distance_zmp) + self.omega_speed * sum_error_v
         # delta_g = self.omega_distance * distance
 
         pole_length_0 = math.sqrt((parent[3] - child[0])**2 + (parent[5] - child[1])**2)
@@ -283,7 +285,8 @@ class AnymalAStar:
 
     def isDone(self,child):
         if math.sqrt((child[0] - self.goal[0])**2 + (child[1] - self.goal[1])**2) < 0.2 and \
-                math.sqrt((child[3] - self.goal[0])**2 + (child[5] - self.goal[1])**2) < 0.2 :
+                math.sqrt((child[3] - self.goal[0])**2 + (child[5] - self.goal[1])**2) < 0.2 \
+                and math.sqrt(child[4] **2 + child[6] **2) < 0.1:
             return True
         else:
             return False
@@ -371,7 +374,7 @@ class AnymalAStar:
 
 if __name__ == "__main__":
     zmp_0 = (2.0,1.0,0.)
-    zmp_f = (9.0,8,0)
+    zmp_f = (9.0,9,0)
     anyAStar = AnymalAStar(zmp_0,zmp_f)
     anyAStar.run()
     optimalPath = anyAStar.getOptimalPath()
