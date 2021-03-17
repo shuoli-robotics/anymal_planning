@@ -6,7 +6,7 @@ import numpy as np
 import copy
 import matplotlib.pyplot as plt
 import math
-import anymal_planning.point_cloud as pc
+import point_cloud as pc
 from mayavi import mlab
 import logging
 
