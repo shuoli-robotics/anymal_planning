@@ -1,5 +1,8 @@
 from astar_LIP import AnymalAStar
 import numpy as np
+import rospy
+from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point
 
 class AnymalAStarRos(AnymalAStar):
     def __init__(self,zmp_0, zmp_f):
@@ -13,6 +16,9 @@ class AnymalAStarRos(AnymalAStar):
 
         self.position_EE = np.zeros((4,3))
 
+        # rospy.init_node('AnymalAStar')
+        self.pub_LIP = rospy.Publisher("LIP", Marker, queue_size=10)
+
     def calc_zmp(self):
         contact_feet_position = []
         for i,foot in enumerate(self.on_ground):
@@ -25,6 +31,20 @@ class AnymalAStarRos(AnymalAStar):
     def calc_zmp_callback(self,data):
         if data:
             self.calc_zmp()
+            m = Marker()
+            m.header.frame_id = '/odom'
+            m.header.stamp = rospy.Time.now()
+            m.ns = 'anyplan_listener'
+            m.pose.orientation.w = 1.0
+            m.action = Marker.ADD
+            m.id = 0
+            m.type = Marker.LINE_LIST
+            m.color.a = 1.0
+            p0 = Point(self.zmp[0],self.zmp[1],self.zmp[2])
+            p1 = Point(self.mass_point[0],self.mass_point[1],self.mass_point[2])
+            m.points.append(p0)
+            m.points.append(p1)
+            self.pub_LIP.publish(m)
 
     def set_on_ground_LF_callback(self,data):
         self.on_ground[0] = data.value
@@ -49,3 +69,6 @@ class AnymalAStarRos(AnymalAStar):
 
     def set_EE_RH_callback(self,data):
         self.position_EE[3] = [data.vector.x,data.vector.y,data.vector.z]
+
+    def set_center_of_mass_callback(self,data):
+        self.mass_point = [data.vector.x,data.vector.y,data.vector.z]

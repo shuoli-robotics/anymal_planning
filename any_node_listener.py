@@ -6,12 +6,13 @@ from geometry_msgs.msg import TwistWithCovarianceStamped
 from signal_logger_msgs.msg import BoolStamped
 from geometry_msgs.msg import Vector3Stamped
 from std_msgs.msg import Bool
+from anymal_msgs.msg import AnymalState
 import astar_ros
 
 def listener():
     rospy.init_node('anyplan_listener')
 
-    rospy.Subscriber("/state_estimator/twist", TwistWithCovarianceStamped, callback)
+    rospy.Subscriber("/log/loco/whole_body/positionWorldToComInWorldFrame", Vector3Stamped, astar.set_center_of_mass_callback)
     rospy.Subscriber("/log/loco/leftFore/isGrounded", BoolStamped, astar.set_on_ground_LF_callback)
     rospy.Subscriber("/log/loco/rightFore/isGrounded", BoolStamped, astar.set_on_ground_RF_callback)
     rospy.Subscriber("/log/loco/leftHind/isGrounded", BoolStamped, astar.set_on_ground_LH_callback)
