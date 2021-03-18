@@ -6,7 +6,7 @@ from geometry_msgs.msg import TwistWithCovarianceStamped
 from signal_logger_msgs.msg import BoolStamped
 from geometry_msgs.msg import Vector3Stamped
 from std_msgs.msg import Bool
-import astar_LIP
+import astar_ros
 
 def listener():
     rospy.init_node('anyplan_listener')
@@ -44,7 +44,7 @@ def callback(data):
 if __name__ == '__main__':
     zmp_0 = (2.0,1.0,0.)
     zmp_f = (9.0,9,0)
-    astar = astar_LIP.AnymalAStar(zmp_0,zmp_f)
+    astar = astar_ros.AnymalAStarRos(zmp_0,zmp_f)
     listener()
 
     # astar.run()
