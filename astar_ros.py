@@ -32,14 +32,18 @@ class AnymalAStarRos(AnymalAStar):
         if data:
             self.calc_zmp()
             m = Marker()
-            m.header.frame_id = '/odom'
+            m.header.frame_id = 'odom'
             m.header.stamp = rospy.Time.now()
             m.ns = 'anyplan_listener'
             m.pose.orientation.w = 1.0
             m.action = Marker.ADD
             m.id = 0
             m.type = Marker.LINE_LIST
+            m.color.r = 0.4
+            m.color.g = 0.4
+            m.color.b = 0.4
             m.color.a = 1.0
+            m.scale.x = 0.1
             p0 = Point(self.zmp[0],self.zmp[1],self.zmp[2])
             p1 = Point(self.mass_point[0],self.mass_point[1],self.mass_point[2])
             m.points.append(p0)
