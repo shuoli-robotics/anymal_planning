@@ -65,7 +65,7 @@ class AnymalAStar:
         fh.setFormatter(formatter)
         self.logger.addHandler(fh)
         self.logTimes = 2000
-        self.log_flag = True
+        self.log_flag = False
 
         print("The start node is {}".format(self.start))
         print("The goal node is {}".format(self.goal))
@@ -86,8 +86,7 @@ class AnymalAStar:
                 break
             else:
                 self.numSearchTimes = self.numSearchTimes + 1
-                if self.numSearchTimes % 20 == 0:
-                    print("A* is running. searching ID is {}".format(self.numSearchTimes))
+                print("A* is running. searching ID is {}".format(self.numSearchTimes))
                 self.searchChildren(currentNode)
 
 

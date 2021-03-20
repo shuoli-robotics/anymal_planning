@@ -18,6 +18,7 @@ class AnymalAStarRos(AnymalAStar):
 
         # rospy.init_node('AnymalAStar')
         self.pub_LIP = rospy.Publisher("LIP", Marker, queue_size=10)
+        self.pub_path = rospy.Publisher("optimal_path", Marker, queue_size=10)
 
     def calc_zmp(self):
         contact_feet_position = []
@@ -97,3 +98,41 @@ class AnymalAStarRos(AnymalAStar):
         self.closedList = {}
         self.openList = {}
         self.run()
+
+    def display_path_callback(self,data):
+        print("[astar_ros] display_path_callback")
+        op = self.getOptimalPath()
+        zmp_x = np.zeros(len(op))
+        zmp_y = np.zeros(len(op))
+        mass_point_x = np.zeros(len(op))
+        mass_point_y = np.zeros(len(op))
+        mass_point_vx = np.zeros(len(op))
+        mass_point_vy = np.zeros(len(op))
+
+        for i, node in enumerate(op):
+            x = node[3]
+            y = node[5]
+            z = self.z
+
+            m = Marker()
+            m.header.frame_id = 'odom'
+            m.header.stamp = rospy.Time.now()
+            m.ns = 'anyplan_listener'
+            m.pose.orientation.w = 1.0
+            m.action = Marker.ADD
+            m.id = i
+            m.type = Marker.LINE_LIST
+            m.color.r = 0.4
+            m.color.g = 0
+            m.color.b = 0.4
+            m.color.a = 1.0
+            m.scale.x = 0.1
+            m.lifetime = rospy.Duration.from_sec(100)
+            p0 = Point(node[0], node[1], node[2])
+            p1 = Point(node[3], node[5], self.z)
+            m.points.append(p0)
+            m.points.append(p1)
+            print("[astar_ros] display_path_callback p0 = {},p1 = {}".format(p0,p1))
+            self.pub_path.publish(m)
+
+

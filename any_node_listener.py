@@ -26,6 +26,7 @@ def listener():
     rospy.Subscriber("calc_zmp_cmd", Bool,astar.calc_zmp_callback)
     rospy.Subscriber("set_goal", Vector3Stamped, astar.set_goal_callback)
     rospy.Subscriber("astar_run", Vector3Stamped, astar.run_callback)
+    rospy.Subscriber("display_path", Bool, astar.display_path_callback)
 
     rospy.spin()
 
