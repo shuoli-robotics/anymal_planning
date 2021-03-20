@@ -118,21 +118,21 @@ class AnymalAStarRos(AnymalAStar):
             m.header.frame_id = 'odom'
             m.header.stamp = rospy.Time.now()
             m.ns = 'anyplan_listener'
-            m.pose.orientation.w = 1.0
+            # m.pose.orientation.w = 1.0
             m.action = Marker.ADD
             m.id = i
             m.type = Marker.LINE_LIST
             m.color.r = 0.4
             m.color.g = 0
-            m.color.b = 0.4
+            m.color.b = 0
             m.color.a = 1.0
-            m.scale.x = 0.1
+            m.scale.x = 0.01
             m.lifetime = rospy.Duration.from_sec(100)
             p0 = Point(node[0], node[1], node[2])
             p1 = Point(node[3], node[5], self.z)
             m.points.append(p0)
             m.points.append(p1)
-            print("[astar_ros] display_path_callback p0 = {},p1 = {}".format(p0,p1))
+            # print("[astar_ros] display_path_callback p0 = {},p1 = {}".format(p0,p1))
             self.pub_path.publish(m)
 
 
