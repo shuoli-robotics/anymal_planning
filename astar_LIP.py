@@ -73,7 +73,7 @@ class AnymalAStar:
     def run(self):
         # add the start point to the open list. Its g = 0, h is the estimate distance towards the goal
         self.openList[self.start] = AnymalStateNode(parentIndex=self.start, g=0, h=self.getH(self.start),index="0-0")
-
+        print("Astar.run enter")
         numSearchTimes = 0
 
         while len(self.openList) > 0:
@@ -86,6 +86,8 @@ class AnymalAStar:
                 break
             else:
                 self.numSearchTimes = self.numSearchTimes + 1
+                if self.numSearchTimes % 20 == 0:
+                    print("A* is running. searching ID is {}".format(self.numSearchTimes))
                 self.searchChildren(currentNode)
 
 

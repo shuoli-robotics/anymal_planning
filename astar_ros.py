@@ -9,8 +9,8 @@ class AnymalAStarRos(AnymalAStar):
         AnymalAStar.__init__(self,zmp_0, zmp_f)
         # LIP's current states
         self.zmp = np.zeros((1,3))
-        self.mass_point = np.zeros((1,3))
-
+        self.mass_point_pos = np.zeros((1,3))
+        self.mass_point_vel = np.zeros((1, 3))
         # Anymal's feet states
         self.on_ground = [True,True,True,True] # LF, RF,LH, RH
 
@@ -45,7 +45,7 @@ class AnymalAStarRos(AnymalAStar):
             m.color.a = 1.0
             m.scale.x = 0.1
             p0 = Point(self.zmp[0],self.zmp[1],self.zmp[2])
-            p1 = Point(self.mass_point[0],self.mass_point[1],self.mass_point[2])
+            p1 = Point(self.mass_point_pos[0],self.mass_point_pos[1],self.mass_point_pos[2])
             m.points.append(p0)
             m.points.append(p1)
             self.pub_LIP.publish(m)
@@ -75,4 +75,25 @@ class AnymalAStarRos(AnymalAStar):
         self.position_EE[3] = [data.vector.x,data.vector.y,data.vector.z]
 
     def set_center_of_mass_callback(self,data):
-        self.mass_point = [data.vector.x,data.vector.y,data.vector.z]
+        self.mass_point_pos = [data.vector.x,data.vector.y,data.vector.z]
+
+    def set_velocity_of_mass_callback(self,data):
+        self.mass_point_vel = [data.vector.x,data.vector.y,data.vector.z]
+
+    def set_goal_callback(self,data):
+        self.goal = [data.vector.x,data.vector.y,data.vector.z]
+
+    def run_callback(self,data):
+
+        self.calc_zmp()
+        self.zmp[0] = round(self.zmp[0],1)
+        self.zmp[1] = round(self.zmp[1], 1)
+        self.zmp[2] = round(self.zmp[2], 1)
+        self.start = tuple(self.zmp) + (round(self.mass_point_pos[0],1),round(self.mass_point_vel[0],1),round(self.mass_point_pos[1],1),round(self.mass_point_vel[1],1))
+        self.goal = (data.vector.x, data.vector.y, data.vector.z)
+        print("[astar_ros] astar.run() is called")
+        print("The start node is {}".format(self.start))
+        print("The goal node is {}".format(self.goal))
+        self.closedList = {}
+        self.openList = {}
+        self.run()

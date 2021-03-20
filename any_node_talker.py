@@ -7,12 +7,12 @@ from geometry_msgs.msg import TwistWithCovarianceStamped
 
 
 def talker():
-    pub = rospy.Publisher('calc_zmp_cmd', Bool, queue_size=10)
+    pub_zmp = rospy.Publisher('calc_zmp_cmd', Bool, queue_size=10)
     rospy.init_node('talker', anonymous=True)
-    rate = rospy.Rate(10) # 10hz
+    rate = rospy.Rate(100) # 10hz
     while not rospy.is_shutdown():
         calc_zmp_cmd = True
-        pub.publish(calc_zmp_cmd)
+        pub_zmp.publish(calc_zmp_cmd)
         rate.sleep()
 
 if __name__ == '__main__':

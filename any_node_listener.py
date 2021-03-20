@@ -13,6 +13,8 @@ def listener():
     rospy.init_node('anyplan_listener')
 
     rospy.Subscriber("/log/loco/whole_body/positionWorldToComInWorldFrame", Vector3Stamped, astar.set_center_of_mass_callback)
+    rospy.Subscriber("/log/loco/whole_body/linearVelocityComInWorldFrame", Vector3Stamped, astar.set_velocity_of_mass_callback)
+
     rospy.Subscriber("/log/loco/leftFore/isGrounded", BoolStamped, astar.set_on_ground_LF_callback)
     rospy.Subscriber("/log/loco/rightFore/isGrounded", BoolStamped, astar.set_on_ground_RF_callback)
     rospy.Subscriber("/log/loco/leftHind/isGrounded", BoolStamped, astar.set_on_ground_LH_callback)
@@ -22,6 +24,8 @@ def listener():
     rospy.Subscriber("/log/loco/leftHind/positionWorldToEEOriginInWorldFrame", Vector3Stamped, astar.set_EE_LH_callback)
     rospy.Subscriber("/log/loco/rightHind/positionWorldToEEOriginInWorldFrame", Vector3Stamped, astar.set_EE_RH_callback)
     rospy.Subscriber("calc_zmp_cmd", Bool,astar.calc_zmp_callback)
+    rospy.Subscriber("set_goal", Vector3Stamped, astar.set_goal_callback)
+    rospy.Subscriber("astar_run", Vector3Stamped, astar.run_callback)
 
     rospy.spin()
 
@@ -44,7 +48,7 @@ def callback(data):
 
 if __name__ == '__main__':
     zmp_0 = (2.0,1.0,0.)
-    zmp_f = (9.0,9,0)
+    zmp_f = (5.0,5,0)
     astar = astar_ros.AnymalAStarRos(zmp_0,zmp_f)
     listener()
 

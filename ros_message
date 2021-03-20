@@ -1,0 +1,1 @@
+rostopic pub /astar_run geometry_msgs/Vector3Stamped '{vector: [3.0, 0.0, 0.0]}'
