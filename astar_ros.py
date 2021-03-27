@@ -18,7 +18,7 @@ class AnymalAStarRos(AnymalAStar):
 
         # rospy.init_node('AnymalAStar')
         self.pub_LIP = rospy.Publisher("LIP", Marker, queue_size=10)
-        self.pub_path = rospy.Publisher("optimal_path", Marker, queue_size=10)
+        self.pub_path = rospy.Publisher("optimal_path", Marker, queue_size=30)
 
     def calc_zmp(self):
         contact_feet_position = []

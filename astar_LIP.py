@@ -19,6 +19,28 @@ class AnymalStateNode:
         self.f = g + h
         self.index = index
 
+class StanceStatus:
+    def __init__(self):
+        # Indicate how Anymal arrives at current status
+        # 0 ----- stand still
+        # 1 ----- LF and RH swing to current position, RF and LH keep static
+        # 2 ----- LF and RH keep static, RF and LH swing to current position
+        self.leg_status = 0
+
+        # Positions of each end effector
+        self.LF_pos = []
+        self.RF_pos = []
+        self.LH_pos = []
+        self.RH_pos = []
+
+        # Trajectories' coefficients from current phase to the next phase
+        self.LF_coef = []
+        self.RF_coef = []
+        self.LH_coef = []
+        self.RH_coef = []
+
+        self.heading = 0.0
+
 
 class ActionsBase:
     def __init__(self):
@@ -43,6 +65,7 @@ class AnymalAStar:
         self.openList = {}
         self.closedList = {}
         self.actions = ActionsBase()
+        self.trajectories = {}
         self.phaseTime = 0.3
         self.z = 0.43
         self.g = 9.81
@@ -299,7 +322,23 @@ class AnymalAStar:
         while parent != self.start:
             parent = self.closedList[parent].parent
             optimalPath.append(parent)
+
+        for i, node in reversed(list(enumerate(optimalPath))):
+            print(i)  # len - i -1
+            print(node)
         return optimalPath
+
+    def generate_EE_trajectory(self):
+
+        optimalPath = self.getOptimalPath()
+        n = len(optimalPath)
+        for i, node in reversed(list(enumerate(optimalPath))):
+            index = n-i-1
+            self.trajectories[index] = StanceStatus()
+            if index == 0:
+                self.trajectories[index].leg_status = 0
+                
+
 
 
 
