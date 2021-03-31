@@ -69,7 +69,10 @@ class AnymalAStar:
         self.phaseTime = 0.3
         self.z = 0.43
         self.g = 9.81
+        self.anymal_width = 0.45
+        self.anymal_length = 0.70
         self.desired_vel = 0.4
+        self.heading = 0.0
 
         self.numSearchTimes = 0
         self.child_num = -1
@@ -336,11 +339,43 @@ class AnymalAStar:
             index = n-i-1
             self.trajectories[index] = StanceStatus()
             if index == 0:
-                self.trajectories[index].leg_status = 0
-                
 
 
+            else:
+                if self.trajectories[index-1].leg_status == 0:
+                    self.trajectories[index - 1].leg_status = 1
+                elif self.trajectories[index-1].leg_status == 1:
+                    self.trajectories[index - 1].leg_status = 2
+                elif self.trajectories[index-1].leg_status == 2:
+                    self.trajectories[index - 1].leg_status = 1
 
+    def generate_footholds_for_all_EEs(self):
+        self.trajectories[index].leg_status = 0
+        R_E_B = np.array(
+            [[math.cos(self.heading), math.sin(self.heading)], [-math.sin(self.heading), math.cos(self.heading)]])
+        LF_pos_xy = R_E_B.dot(np.array([self.anymal_length / 2.0, self.anymal_width / 2.0]))
+        LF_pos_xy = LF_pos_xy + np.array([node[0], node[1]])
+        LF_pos_xy = np.around(LF_pos_xy, 1)
+        self.trajectories[index].LF_pos = np.concatenate(
+            (LF_pos_xy, np.array([self.pointCloud.pc[(LF_pos_xy[0], LF_pos_xy[1])].z])))
+
+        RF_pos_xy = np.around(R_E_B.dot(np.array([self.anymal_length / 2.0, -self.anymal_width / 2.0])), 1)
+        RF_pos_xy = RF_pos_xy + np.array([node[0], node[1]])
+        self.trajectories[index].RF_pos = np.concatenate(
+            (RF_pos_xy, np.array([self.pointCloud.pc[(RF_pos_xy[0], RF_pos_xy[1])].z])))
+
+        LH_pos_xy = np.around(R_E_B.dot(np.array([-self.anymal_length / 2.0, self.anymal_width / 2.0])), 1)
+        LH_pos_xy = LH_pos_xy + np.array([node[0], node[1]])
+        self.trajectories[index].LH_pos = np.concatenate(
+            (LH_pos_xy, np.array([self.pointCloud.pc[(LH_pos_xy[0], LH_pos_xy[1])].z])))
+
+        RH_pos_xy = np.around(R_E_B.dot(np.array([-self.anymal_length / 2.0, -self.anymal_width / 2.0])), 1)
+        RH_pos_xy = RH_pos_xy + np.array([node[0], node[1]])
+        self.trajectories[index].RH_pos = np.concatenate(
+            (RH_pos_xy, np.array([self.pointCloud.pc[(RH_pos_xy[0], RH_pos_xy[1])].z])))
+
+
+                test = 1
 
 
 
@@ -423,5 +458,6 @@ if __name__ == "__main__":
     anyAStar = AnymalAStar(zmp_0,zmp_f)
     anyAStar.run()
     optimalPath = anyAStar.getOptimalPath()
+    anyAStar.generate_EE_trajectory()
     anyAStar.plot_result()
 
