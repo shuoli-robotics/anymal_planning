@@ -348,24 +348,28 @@ class AnymalAStar:
             index = n-i-1
             self.trajectories[index] = StanceStatus()
             if index == 0:
-                lf_e, rh_e = self.generate_footholds_for_major_diagonal_EEs(node)
-                rf_e, lh_e = self.generate_footholds_for_minor_diagonal_EEs(node)
-
-                temp = 1
+                self.trajectories[index].LF_pos , self.trajectories[index].RH_pos  = self.generate_footholds_for_major_diagonal_EEs(node)
+                self.trajectories[index].RF_pos , self.trajectories[index].LH_pos = self.generate_footholds_for_minor_diagonal_EEs(node)
 
             else:
                 # pass
                 if self.trajectories[index-1].leg_status == LegStatus.STAND_STILL:
                     self.trajectories[index].leg_status = LegStatus.MAJOR_DIAGONAL
-                    lf_e, rh_e = self.generate_footholds_for_major_diagonal_EEs(node)
+                    self.trajectories[index].LF_pos , self.trajectories[index].RH_pos = self.generate_footholds_for_major_diagonal_EEs(node)
+                    self.trajectories[index].RF_pos = self.trajectories[index-1].RF_pos
+                    self.trajectories[index].LH_pos = self.trajectories[index - 1].LH_pos
 
                 elif self.trajectories[index-1].leg_status == LegStatus.MAJOR_DIAGONAL:
                     self.trajectories[index].leg_status = LegStatus.MINOR_DIAGONAL
-                    rf_e, lh_e = self.generate_footholds_for_minor_diagonal_EEs(node)
+                    self.trajectories[index].RF_pos , self.trajectories[index].LH_pos = self.generate_footholds_for_minor_diagonal_EEs(node)
+                    self.trajectories[index].LF_pos = self.trajectories[index-1].LF_pos
+                    self.trajectories[index].RH_pos = self.trajectories[index - 1].RH_pos
 
                 elif self.trajectories[index-1].leg_status == LegStatus.MINOR_DIAGONAL:
                     self.trajectories[index].leg_status = LegStatus.MAJOR_DIAGONAL
-                    lf_e, rh_e = self.generate_footholds_for_major_diagonal_EEs(node)
+                    self.trajectories[index].LF_pos , self.trajectories[index].RH_pos = self.generate_footholds_for_major_diagonal_EEs(node)
+                    self.trajectories[index].RF_pos = self.trajectories[index-1].RF_pos
+                    self.trajectories[index].LH_pos = self.trajectories[index - 1].LH_pos
 
     def generate_footholds_for_major_diagonal_EEs(self,node):
         R_E_B = np.array(
