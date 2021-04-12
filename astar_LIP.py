@@ -9,6 +9,7 @@ import math
 import point_cloud as pc
 from mayavi import mlab
 import logging
+from enum import Enum
 
 
 class AnymalStateNode:
@@ -19,13 +20,14 @@ class AnymalStateNode:
         self.f = g + h
         self.index = index
 
+class LegStatus(Enum):
+    STAND_STILL = 1   # stand still
+    MAJOR_DIAGONAL = 2 # LF and RH swing to current position, RF and LH keep static
+    MAINOR_DIAGONAL = 3 # LF and RH keep static, RF and LH swing to current position
+
 class StanceStatus:
     def __init__(self):
-        # Indicate how Anymal arrives at current status
-        # 0 ----- stand still
-        # 1 ----- LF and RH swing to current position, RF and LH keep static
-        # 2 ----- LF and RH keep static, RF and LH swing to current position
-        self.leg_status = 0
+        self.leg_status = LegStatus.STAND_STILL
 
         # Positions of each end effector
         self.LF_pos = []
@@ -69,8 +71,15 @@ class AnymalAStar:
         self.phaseTime = 0.3
         self.z = 0.43
         self.g = 9.81
-        self.anymal_width = 0.45
+
         self.anymal_length = 0.70
+        self.anymal_width = 0.45
+        self.LF_b = np.array([self.anymal_length/2, self.anymal_width/2])
+        self.RF_b = np.array([self.anymal_length/2, -self.anymal_width/2])
+        self.LH_b = np.array([-self.anymal_length / 2, self.anymal_width / 2])
+        self.RH_b = np.array([-self.anymal_length / 2, -self.anymal_width / 2])
+
+
         self.desired_vel = 0.4
         self.heading = 0.0
 
@@ -326,9 +335,9 @@ class AnymalAStar:
             parent = self.closedList[parent].parent
             optimalPath.append(parent)
 
-        for i, node in reversed(list(enumerate(optimalPath))):
-            print(i)  # len - i -1
-            print(node)
+        # for i, node in reversed(list(enumerate(optimalPath))):
+        #     print(i)  # len - i -1
+        #     print(node)
         return optimalPath
 
     def generate_EE_trajectory(self):
@@ -339,43 +348,46 @@ class AnymalAStar:
             index = n-i-1
             self.trajectories[index] = StanceStatus()
             if index == 0:
+                lf_e, rh_e = self.generate_footholds_for_major_diagonal_EEs(node)
+                rf_e, lh_e = self.generate_footholds_for_minor_diagonal_EEs(node)
 
+                temp = 1
 
             else:
                 if self.trajectories[index-1].leg_status == 0:
-                    self.trajectories[index - 1].leg_status = 1
+                    self.trajectories[index].leg_status = 1
                 elif self.trajectories[index-1].leg_status == 1:
-                    self.trajectories[index - 1].leg_status = 2
+                    self.trajectories[index].leg_status = 2
                 elif self.trajectories[index-1].leg_status == 2:
-                    self.trajectories[index - 1].leg_status = 1
+                    self.trajectories[index].leg_status = 1
 
-    def generate_footholds_for_all_EEs(self):
-        self.trajectories[index].leg_status = 0
+    def generate_footholds_for_major_diagonal_EEs(self,node):
         R_E_B = np.array(
             [[math.cos(self.heading), math.sin(self.heading)], [-math.sin(self.heading), math.cos(self.heading)]])
-        LF_pos_xy = R_E_B.dot(np.array([self.anymal_length / 2.0, self.anymal_width / 2.0]))
-        LF_pos_xy = LF_pos_xy + np.array([node[0], node[1]])
-        LF_pos_xy = np.around(LF_pos_xy, 1)
-        self.trajectories[index].LF_pos = np.concatenate(
-            (LF_pos_xy, np.array([self.pointCloud.pc[(LF_pos_xy[0], LF_pos_xy[1])].z])))
 
-        RF_pos_xy = np.around(R_E_B.dot(np.array([self.anymal_length / 2.0, -self.anymal_width / 2.0])), 1)
-        RF_pos_xy = RF_pos_xy + np.array([node[0], node[1]])
-        self.trajectories[index].RF_pos = np.concatenate(
-            (RF_pos_xy, np.array([self.pointCloud.pc[(RF_pos_xy[0], RF_pos_xy[1])].z])))
+        lf_pos_h_e = np.around(R_E_B.transpose().dot(self.LF_b) + np.asarray(node[0:2]),   1)
 
-        LH_pos_xy = np.around(R_E_B.dot(np.array([-self.anymal_length / 2.0, self.anymal_width / 2.0])), 1)
-        LH_pos_xy = LH_pos_xy + np.array([node[0], node[1]])
-        self.trajectories[index].LH_pos = np.concatenate(
-            (LH_pos_xy, np.array([self.pointCloud.pc[(LH_pos_xy[0], LH_pos_xy[1])].z])))
+        lf_pos_v_e = self.pointCloud.pc[(lf_pos_h_e[0],lf_pos_h_e[1])].z
 
-        RH_pos_xy = np.around(R_E_B.dot(np.array([-self.anymal_length / 2.0, -self.anymal_width / 2.0])), 1)
-        RH_pos_xy = RH_pos_xy + np.array([node[0], node[1]])
-        self.trajectories[index].RH_pos = np.concatenate(
-            (RH_pos_xy, np.array([self.pointCloud.pc[(RH_pos_xy[0], RH_pos_xy[1])].z])))
+        rh_pos_h_e = np.around(R_E_B.transpose().dot(self.RH_b) + np.asarray(node[0:2]), 1)
+        rh_pos_v_e = self.pointCloud.pc[(rh_pos_h_e[0],rh_pos_h_e[1])].z
+
+        return (np.append(lf_pos_h_e,lf_pos_v_e), np.append(rh_pos_h_e,rh_pos_v_e))
 
 
-                test = 1
+    def generate_footholds_for_minor_diagonal_EEs(self,node):
+        R_E_B = np.array(
+            [[math.cos(self.heading), math.sin(self.heading)], [-math.sin(self.heading), math.cos(self.heading)]])
+
+        rf_pos_h_e = np.around(R_E_B.transpose().dot(self.RF_b) + np.asarray(node[0:2]),   1)
+
+        rf_pos_v_e = self.pointCloud.pc[(rf_pos_h_e[0],rf_pos_h_e[1])].z
+
+        lh_pos_h_e = np.around(R_E_B.transpose().dot(self.LH_b) + np.asarray(node[0:2]), 1)
+        lh_pos_v_e = self.pointCloud.pc[(lh_pos_h_e[0],lh_pos_h_e[1])].z
+
+        return (np.append(rf_pos_h_e,rf_pos_v_e), np.append(lh_pos_h_e,lh_pos_v_e))
+
 
 
 
