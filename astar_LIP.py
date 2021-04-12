@@ -23,7 +23,7 @@ class AnymalStateNode:
 class LegStatus(Enum):
     STAND_STILL = 1   # stand still
     MAJOR_DIAGONAL = 2 # LF and RH swing to current position, RF and LH keep static
-    MAINOR_DIAGONAL = 3 # LF and RH keep static, RF and LH swing to current position
+    MINOR_DIAGONAL = 3 # LF and RH keep static, RF and LH swing to current position
 
 class StanceStatus:
     def __init__(self):
@@ -354,12 +354,18 @@ class AnymalAStar:
                 temp = 1
 
             else:
-                if self.trajectories[index-1].leg_status == 0:
-                    self.trajectories[index].leg_status = 1
-                elif self.trajectories[index-1].leg_status == 1:
-                    self.trajectories[index].leg_status = 2
-                elif self.trajectories[index-1].leg_status == 2:
-                    self.trajectories[index].leg_status = 1
+                # pass
+                if self.trajectories[index-1].leg_status == LegStatus.STAND_STILL:
+                    self.trajectories[index].leg_status = LegStatus.MAJOR_DIAGONAL
+                    lf_e, rh_e = self.generate_footholds_for_major_diagonal_EEs(node)
+
+                elif self.trajectories[index-1].leg_status == LegStatus.MAJOR_DIAGONAL:
+                    self.trajectories[index].leg_status = LegStatus.MINOR_DIAGONAL
+                    rf_e, lh_e = self.generate_footholds_for_minor_diagonal_EEs(node)
+
+                elif self.trajectories[index-1].leg_status == LegStatus.MINOR_DIAGONAL:
+                    self.trajectories[index].leg_status = LegStatus.MAJOR_DIAGONAL
+                    lf_e, rh_e = self.generate_footholds_for_major_diagonal_EEs(node)
 
     def generate_footholds_for_major_diagonal_EEs(self,node):
         R_E_B = np.array(
