@@ -434,6 +434,23 @@ class AnymalAStar:
             zmp_y[len(self.optimalPath)-1-i] = node[1]
             mlab.plot3d(x_line,y_line,z_line,figure=fig)
 
+        footholds_lf = np.empty(shape=[0, 3])
+        footholds_rf = np.empty(shape=[0, 3])
+        footholds_lh = np.empty(shape=[0, 3])
+        footholds_rh = np.empty(shape=[0, 3])
+        for i in self.trajectories:
+            footholds_lf = np.vstack((footholds_lf,self.trajectories[i].LF_pos))
+            footholds_rf = np.vstack((footholds_rf, self.trajectories[i].RF_pos))
+            footholds_lh = np.vstack((footholds_lh, self.trajectories[i].LH_pos))
+            footholds_rh = np.vstack((footholds_rh, self.trajectories[i].RH_pos))
+
+        mlab.points3d(footholds_lf[:,0], footholds_lf[:,1], footholds_lf[:,2], figure=fig,scale_factor=.05,color=(1,0,0))
+        mlab.points3d(footholds_rf[:,0], footholds_rf[:,1], footholds_rf[:,2], figure=fig,scale_factor=.05,color=(1,1,0))
+        mlab.points3d(footholds_lh[:, 0], footholds_lf[:, 1], footholds_lf[:, 2], figure=fig, scale_factor=.05,
+                      color=(0, 0, 1))
+        mlab.points3d(footholds_rh[:, 0], footholds_rf[:, 1], footholds_rf[:, 2], figure=fig, scale_factor=.05,
+                      color=(0, 1, 0))
+
         zmp_x_open_list = np.zeros(len(self.openList))
         zmp_y_open_list = np.zeros(len(self.openList))
         zmp_x_closed_list = np.zeros(len(self.closedList))
@@ -476,7 +493,7 @@ class AnymalAStar:
 
 if __name__ == "__main__":
     zmp_0 = (2.0,1.0,0.)
-    zmp_f = (9.0,9,0)
+    zmp_f = (5.0,1,0)
     anyAStar = AnymalAStar(zmp_0,zmp_f)
     anyAStar.run()
     optimalPath = anyAStar.getOptimalPath()
