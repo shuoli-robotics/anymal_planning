@@ -38,6 +38,9 @@ class FootholdStatus:
 
         self.heading = 0.0
 
+        self.lip_states = []
+
+
 
 class ActionsBase:
     def __init__(self):
@@ -344,6 +347,7 @@ class AnymalAStar:
         for i, node in reversed(list(enumerate(optimalPath))):
             index = n-i-1
             self.footholds[index] = FootholdStatus()
+            self.footholds[index].lip_states = node
             if index == 0:
                 self.footholds[index].LF_pos , self.footholds[index].RH_pos  = self.generate_footholds_for_major_diagonal_EEs(node)
                 self.footholds[index].RF_pos , self.footholds[index].LH_pos = self.generate_footholds_for_minor_diagonal_EEs(node)
@@ -373,6 +377,13 @@ class AnymalAStar:
 
         # generate trajectories with the position constraints (footholds) above
 
+        mass_center_x_const = np.zeros(len(self.footholds))
+        mass_center_vx_const = np.zeros(mass_center_x_const.shape)
+        mass_center_y_const = np.zeros(mass_center_x_const.shape)
+        mass_center_vy_const = np.zeros(mass_center_x_const.shape)
+        mass_center_z_const = np.zeros(mass_center_x_const.shape)
+        mass_center_vz_const = np.zeros(mass_center_x_const.shape)
+
         lf_x_const = np.zeros(len(self.footholds))
         lf_y_const = np.zeros(lf_x_const.shape)
         lf_z_const = np.zeros(len(self.footholds)*2-1)
@@ -394,6 +405,14 @@ class AnymalAStar:
 
         for i in self.footholds:
             time[i] = i*self.phaseTime
+
+            mass_center_x_const[i] = self.footholds[i].lip_states[3]
+            mass_center_vx_const[i] = self.footholds[i].lip_states[4]
+            mass_center_y_const[i] = self.footholds[i].lip_states[5]
+            mass_center_vy_const[i] = self.footholds[i].lip_states[6]
+            mass_center_z_const[i] = self.z
+
+
             lf_x_const[i] = self.footholds[i].LF_pos[0]
             lf_y_const[i] = self.footholds[i].LF_pos[1]
             rf_x_const[i] = self.footholds[i].RF_pos[0]
@@ -411,11 +430,21 @@ class AnymalAStar:
             rh_z_const[i * 2] = self.footholds[i].RH_pos[2]
             if i != 0:
                 time_z[i * 2-1] = i * self.phaseTime - 0.5 * self.phaseTime
-                # TODO:
-                lf_z_const[i * 2 -1] = lf_z_const[i * 2] + 0.08
-                rf_z_const[i * 2 -1] = rf_z_const[i * 2] + 0.08
-                lh_z_const[i * 2 -1] = lh_z_const[i * 2] + 0.08
-                rh_z_const[i * 2 -1] = rh_z_const[i * 2] + 0.08
+                if self.footholds[i].leg_status == LegStatus.MAJOR_DIAGONAL:
+                    lf_z_const[i * 2 -1] = lf_z_const[i * 2] + 0.08
+                    rf_z_const[i * 2 -1] = rf_z_const[i * 2]
+                    lh_z_const[i * 2 -1] = lh_z_const[i * 2] + 0.08
+                    rh_z_const[i * 2 -1] = rh_z_const[i * 2]
+                elif self.footholds[i].leg_status == LegStatus.MINOR_DIAGONAL:
+                    lf_z_const[i * 2 -1] = lf_z_const[i * 2]
+                    rf_z_const[i * 2 -1] = rf_z_const[i * 2] + 0.08
+                    lh_z_const[i * 2 -1] = lh_z_const[i * 2]
+                    rh_z_const[i * 2 -1] = rh_z_const[i * 2] + 0.08
+                elif self.footholds[i].leg_status == LegStatus.STAND_STILL:
+                    lf_z_const[i * 2 -1] = lf_z_const[i * 2]
+                    rf_z_const[i * 2 -1] = rf_z_const[i * 2]
+                    lh_z_const[i * 2 -1] = lh_z_const[i * 2]
+                    rh_z_const[i * 2 -1] = rh_z_const[i * 2]
 
 
         ee_velocity_const = np.zeros(lf_x_const.shape)
@@ -432,6 +461,11 @@ class AnymalAStar:
         self.rh_x_trajectory = CubicHermiteSpline(time, rh_x_const, ee_velocity_const)
         self.rh_y_trajectory = CubicHermiteSpline(time, rh_y_const, ee_velocity_const)
         self.rh_z_trajectory = CubicHermiteSpline(time_z, rh_z_const, ee_velocity_z_const)
+
+        self.center_point_x_trajectory = CubicHermiteSpline(time, mass_center_x_const,mass_center_vx_const)
+        self.center_point_y_trajectory = CubicHermiteSpline(time, mass_center_y_const, mass_center_vy_const)
+        self.center_point_z_trajectory = CubicHermiteSpline(time, mass_center_z_const, mass_center_vz_const)
+
         self.planning_time = time
 
 
@@ -572,6 +606,10 @@ class AnymalAStar:
         rh_y = np.zeros(sample_number)
         rh_z = np.zeros(sample_number)
 
+        center_point_x = np.zeros(sample_number)
+        center_point_y = np.zeros(sample_number)
+        center_point_z = np.zeros(sample_number)
+
 
         for i,t in enumerate(time):
             lf_x[i] = self.lf_x_trajectory.__call__(t)
@@ -587,18 +625,23 @@ class AnymalAStar:
             rh_y[i] = self.rh_y_trajectory.__call__(t)
             rh_z[i] = self.rh_z_trajectory.__call__(t)
 
-        ax3[0].plot(time,lf_x,'r',time,rf_x,'y',time,lh_x,'b',time,rh_x,'g')
-        ax3[1].plot(time, lf_y, 'r', time, rf_y, 'y', time, lh_y, 'b', time, rh_y, 'g')
+            center_point_x[i] = self.center_point_x_trajectory.__call__(t)
+            center_point_y[i] = self.center_point_y_trajectory.__call__(t)
+            center_point_z[i] = self.center_point_z_trajectory.__call__(t)
+
+        ax3[0].plot(time,lf_x,'r',time,rf_x,'y',time,lh_x,'b',time,rh_x,'g',time,center_point_x,'k')
+        ax3[1].plot(time, lf_y, 'r', time, rf_y, 'y', time, lh_y, 'b', time, rh_y, 'g',time,center_point_y,'k')
         ax3[2].plot(time, lf_z,'r')
 
         mlab.plot3d(lf_x, lf_y, lf_z, figure=fig, line_width = 0.1, color=(1,0,0))
+        mlab.plot3d(center_point_x, center_point_y, center_point_z, figure=fig, line_width=0.1, color=(0, 0, 0))
         plt.show()
-        # mlab.show()
+        mlab.show()
 
 
 if __name__ == "__main__":
     zmp_0 = (2.0,1.0,0.)
-    zmp_f = (5.0,1,0)
+    zmp_f = (3.0,1,0)
     anyAStar = AnymalAStar(zmp_0,zmp_f)
     anyAStar.run()
     optimalPath = anyAStar.getOptimalPath()
