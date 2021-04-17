@@ -6,6 +6,7 @@ from geometry_msgs.msg import TwistWithCovarianceStamped
 from signal_logger_msgs.msg import BoolStamped
 from geometry_msgs.msg import Vector3Stamped
 from std_msgs.msg import Bool
+from geometry_msgs.msg import QuaternionStamped
 from anymal_msgs.msg import AnymalState
 import astar_ros
 
@@ -14,7 +15,7 @@ def listener():
 
     rospy.Subscriber("/log/loco/whole_body/positionWorldToComInWorldFrame", Vector3Stamped, astar.set_center_of_mass_callback)
     rospy.Subscriber("/log/loco/whole_body/linearVelocityComInWorldFrame", Vector3Stamped, astar.set_velocity_of_mass_callback)
-
+    rospy.Subscriber("/log/loco/torso/measured/orientationWorldToControl",QuaternionStamped, astar.set_orientation_callback)
     rospy.Subscriber("/log/loco/leftFore/isGrounded", BoolStamped, astar.set_on_ground_LF_callback)
     rospy.Subscriber("/log/loco/rightFore/isGrounded", BoolStamped, astar.set_on_ground_RF_callback)
     rospy.Subscriber("/log/loco/leftHind/isGrounded", BoolStamped, astar.set_on_ground_LH_callback)
@@ -26,6 +27,7 @@ def listener():
     rospy.Subscriber("calc_zmp_cmd", Bool,astar.calc_zmp_callback)
     rospy.Subscriber("set_goal", Vector3Stamped, astar.set_goal_callback)
     rospy.Subscriber("astar_run", Vector3Stamped, astar.run_callback)
+    rospy.Subscriber("display_path", Bool, astar.display_path_callback)
     rospy.Subscriber("display_path", Bool, astar.display_path_callback)
 
     rospy.spin()

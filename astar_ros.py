@@ -3,6 +3,7 @@ import numpy as np
 import rospy
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
+from whole_body_control_msg.msg import whole_body_control_msg
 
 class AnymalAStarRos(AnymalAStar):
     def __init__(self,zmp_0, zmp_f):
@@ -84,6 +85,9 @@ class AnymalAStarRos(AnymalAStar):
     def set_goal_callback(self,data):
         self.goal = [data.vector.x,data.vector.y,data.vector.z]
 
+    def set_orientation_callback(self,data):
+        self.torso_orientation = [data.x,data.y,data.z,data.w]
+
     def run_callback(self,data):
 
         self.calc_zmp()
@@ -134,5 +138,67 @@ class AnymalAStarRos(AnymalAStar):
             m.points.append(p1)
             # print("[astar_ros] display_path_callback p0 = {},p1 = {}".format(p0,p1))
             self.pub_path.publish(m)
+
+    def move_lf_ee_callback(self):
+        traj_ref = whole_body_control_msg()
+        traj_ref.com_position.x = self.mass_point_pos[0]
+        traj_ref.com_position.y = self.mass_point_pos[1]
+        traj_ref.com_position.z = self.mass_point_pos[2]
+
+        traj_ref.base_angular_velocity.x = .0
+        traj_ref.base_angular_velocity.y = .0
+        traj_ref.base_angular_velocity.z = .0
+
+        traj_ref.base_orientation.x = 0.0
+        traj_ref.base_orientation.y = 0.0
+        traj_ref.base_orientation.z = 0.0
+        traj_ref.base_orientation.w = 1.0
+
+        traj_ref.foot1_position.x = self.position_EE[0, 0]
+        traj_ref.foot1_position.y = self.position_EE[0, 1]
+        traj_ref.foot1_position.z = self.position_EE[0, 2]
+
+        traj_ref.foot1_velocity.x = 0
+        traj_ref.foot1_velocity.y = 0
+        traj_ref.foot1_velocity.z = 0
+
+        traj_ref.foot1_isContact = False
+
+        traj_ref.foot2_position.x = self.position_EE[1, 0]
+        traj_ref.foot2_position.y = self.position_EE[1, 1]
+        traj_ref.foot2_position.z = self.position_EE[1, 2]
+
+        traj_ref.foot2_velocity.x = 0
+        traj_ref.foot2_velocity.y = 0
+        traj_ref.foot2_velocity.z = 0
+
+        traj_ref.foot2_isContact = True
+
+        traj_ref.foot3_position.x = self.position_EE[2, 0]
+        traj_ref.foot3_position.y = self.position_EE[2, 1]
+        traj_ref.foot3_position.z = self.position_EE[2, 2]
+
+        traj_ref.foot3_velocity.x = 0
+        traj_ref.foot3_velocity.y = 0
+        traj_ref.foot3_velocity.z = 0
+
+        traj_ref.foot3_isContact = True
+
+        traj_ref.foot4_position.x = self.position_EE[2, 0]
+        traj_ref.foot4_position.y = self.position_EE[2, 1]
+        traj_ref.foot4_position.z = self.position_EE[2, 2]
+
+        traj_ref.foot4_velocity.x = 0
+        traj_ref.foot4_velocity.y = 0
+        traj_ref.foot4_velocity.z = 0
+
+        traj_ref.foot4_isContact = True
+
+
+
+
+
+
+
 
 
