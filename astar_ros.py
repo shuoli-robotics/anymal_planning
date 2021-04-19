@@ -30,6 +30,12 @@ class AnymalAStarRos(AnymalAStar):
 
         self.position_EE = np.zeros((4,3))
 
+        self.lf_is_contact = True
+        self.rf_is_contact = True
+        self.lh_is_contact = True
+        self.rh_is_contact = True
+
+
         rospy.Subscriber("/log/loco/whole_body/positionWorldToComInWorldFrame", Vector3Stamped, self.set_center_of_mass_callback)
         rospy.Subscriber("/log/loco/whole_body/linearVelocityComInWorldFrame", Vector3Stamped, self.set_velocity_of_mass_callback)
         rospy.Subscriber("/log/loco/torso/measured/orientationWorldToControl", QuaternionStamped, self.set_orientation_callback)
@@ -50,6 +56,8 @@ class AnymalAStarRos(AnymalAStar):
         self.pub_LIP = rospy.Publisher("LIP", Marker, queue_size=10)
         self.pub_path = rospy.Publisher("optimal_path", Marker, queue_size=30)
         self.pub_whole_body_ref = rospy.Publisher("/whole_body_control_reference", whole_body_control_msg, queue_size=30)
+
+
 
     def calc_zmp(self):
         contact_feet_position = []
@@ -170,39 +178,39 @@ class AnymalAStarRos(AnymalAStar):
             self.pub_path.publish(m)
 
     def test_calc_lf_ee_traj_callback(self):
-        self.traj_time = 2.0
-        time = [0,self.traj_time/2,self.traj_time]
+        self.traj_time = 20.0
+        time = [0,self.traj_time/4,self.traj_time/4*3,self.traj_time]
 
-        lf_x_const = [self.position_EE[0,0],self.position_EE[0,0],self.position_EE[0,0]]
-        lf_y_const = [self.position_EE[0, 1], self.position_EE[0, 1], self.position_EE[0, 1]]
-        lf_z_const = [self.position_EE[0, 2],self.position_EE[0, 2]+0.08,self.position_EE[0, 2]]
-        lf_vel_const = [.0,.0,.0]
+        lf_x_const = [self.position_EE[0,0],self.position_EE[0,0],self.position_EE[0,0],self.position_EE[0,0]]
+        lf_y_const = [self.position_EE[0, 1], self.position_EE[0, 1]-0.05, self.position_EE[0, 1]-0.05,self.position_EE[0, 1]-0.05]
+        lf_z_const = [self.position_EE[0, 2],self.position_EE[0, 2],self.position_EE[0, 2],self.position_EE[0, 2]]
+        lf_vel_const = [.0,.0,.0,.0]
 
-        rf_x_const = [self.position_EE[1,0],self.position_EE[1,0],self.position_EE[1,0]]
-        rf_y_const = [self.position_EE[1, 1], self.position_EE[1, 1], self.position_EE[1, 1]]
-        rf_z_const = [self.position_EE[1, 2],self.position_EE[1, 2],self.position_EE[1, 2]]
-        rf_vel_const = [.0,.0,.0]
+        rf_x_const = [self.position_EE[1,0],self.position_EE[1,0],self.position_EE[1,0],self.position_EE[1,0]]
+        rf_y_const = [self.position_EE[1, 1], self.position_EE[1, 1], self.position_EE[1, 1],self.position_EE[1, 1]]
+        rf_z_const = [self.position_EE[1, 2],self.position_EE[1, 2],self.position_EE[1, 2],self.position_EE[1, 2]]
+        rf_vel_const = [.0,.0,.0,.0]
 
-        lh_x_const = [self.position_EE[2,0],self.position_EE[2,0],self.position_EE[2,0]]
-        lh_y_const = [self.position_EE[2, 1], self.position_EE[2, 1], self.position_EE[2, 1]]
-        lh_z_const = [self.position_EE[2, 2],self.position_EE[2, 2],self.position_EE[2, 2]]
-        lh_vel_const = [.0,.0,.0]
+        lh_x_const = [self.position_EE[2,0],self.position_EE[2,0],self.position_EE[2,0],self.position_EE[2,0]]
+        lh_y_const = [self.position_EE[2, 1], self.position_EE[2, 1], self.position_EE[2, 1],self.position_EE[2, 1]]
+        lh_z_const = [self.position_EE[2, 2],self.position_EE[2, 2],self.position_EE[2, 2],self.position_EE[2, 2]]
+        lh_vel_const = [.0,.0,.0,.0]
 
-        rh_x_const = [self.position_EE[3,0],self.position_EE[3,0],self.position_EE[3,0]]
-        rh_y_const = [self.position_EE[3, 1], self.position_EE[3, 1], self.position_EE[3, 1]]
-        rh_z_const = [self.position_EE[3, 2],self.position_EE[3, 2],self.position_EE[3, 2]]
-        rh_vel_const = [.0,.0,.0]
+        rh_x_const = [self.position_EE[3,0],self.position_EE[3,0],self.position_EE[3,0],self.position_EE[3,0]]
+        rh_y_const = [self.position_EE[3, 1], self.position_EE[3, 1], self.position_EE[3, 1],self.position_EE[3, 1]]
+        rh_z_const = [self.position_EE[3, 2],self.position_EE[3, 2],self.position_EE[3, 2],self.position_EE[3, 2]]
+        rh_vel_const = [.0,.0,.0,.0]
 
-        mass_center_x_const = [self.mass_point_pos[0],self.mass_point_pos[0],self.mass_point_pos[0]]
-        mass_center_y_const = [self.mass_point_pos[1], self.mass_point_pos[1], self.mass_point_pos[1]]
-        mass_center_z_const = [self.mass_point_pos[2], self.mass_point_pos[2], self.mass_point_pos[2]]
-        mass_center_vel_const = [.0, .0, .0]
+        mass_center_x_const = [self.mass_point_pos[0],self.mass_point_pos[0]-0.05,self.mass_point_pos[0]-0.05,self.mass_point_pos[0]-0.05]
+        mass_center_y_const = [self.mass_point_pos[1], self.mass_point_pos[1]-0.05, self.mass_point_pos[1]-0.05,self.mass_point_pos[1]-0.05]
+        mass_center_z_const = [self.mass_point_pos[2], self.mass_point_pos[2], self.mass_point_pos[2],self.mass_point_pos[2]]
+        mass_center_vel_const = [.0, .0, .0,.0]
 
-        orientation_x_const = [self.torso_orientation[0],self.torso_orientation[0],self.torso_orientation[0]]
-        orientation_y_const = [self.torso_orientation[1], self.torso_orientation[1], self.torso_orientation[1]]
-        orientation_z_const = [self.torso_orientation[2], self.torso_orientation[2], self.torso_orientation[2]]
-        orientation_w_const = [self.torso_orientation[3], self.torso_orientation[3], self.torso_orientation[3]]
-        orientation_vel_const = [.0, .0, .0]
+        orientation_x_const = [self.torso_orientation[0],self.torso_orientation[0],self.torso_orientation[0],self.torso_orientation[0]]
+        orientation_y_const = [self.torso_orientation[1], self.torso_orientation[1], self.torso_orientation[1], self.torso_orientation[1]]
+        orientation_z_const = [self.torso_orientation[2], self.torso_orientation[2], self.torso_orientation[2], self.torso_orientation[2]]
+        orientation_w_const = [self.torso_orientation[3], self.torso_orientation[3], self.torso_orientation[3], self.torso_orientation[3]]
+        orientation_vel_const = [.0, .0, .0,.0]
 
         self.lf_x_trajectory = CubicHermiteSpline(time, lf_x_const, lf_vel_const)
         self.lf_y_trajectory = CubicHermiteSpline(time, lf_y_const, lf_vel_const)
@@ -249,6 +257,9 @@ class AnymalAStarRos(AnymalAStar):
         traj_ref.com_position.x = self.mass_center_x_trajectory.__call__(t)
         traj_ref.com_position.y = self.mass_center_y_trajectory.__call__(t)
         traj_ref.com_position.z = self.mass_center_z_trajectory.__call__(t)
+        print(traj_ref.com_position.x)
+        print(traj_ref.com_position.y)
+        print(traj_ref.com_position.z)
 
         traj_ref.base_angular_velocity.x = .0
         traj_ref.base_angular_velocity.y = .0
@@ -267,7 +278,7 @@ class AnymalAStarRos(AnymalAStar):
         traj_ref.foot1_velocity.y = self.lf_vy_trajectory.__call__(t)
         traj_ref.foot1_velocity.z = self.lf_vz_trajectory.__call__(t)
 
-        traj_ref.foot1_isContact = False
+        traj_ref.foot1_isContact = self.lf_is_contact
 
         traj_ref.foot2_position.x = self.position_EE[1, 0]
         traj_ref.foot2_position.y = self.position_EE[1, 1]
@@ -278,7 +289,7 @@ class AnymalAStarRos(AnymalAStar):
         traj_ref.foot2_velocity.y = 0
         traj_ref.foot2_velocity.z = 0
 
-        traj_ref.foot2_isContact = True
+        traj_ref.foot2_isContact = self.rf_is_contact
 
         traj_ref.foot3_position.x = self.position_EE[2, 0]
         traj_ref.foot3_position.y = self.position_EE[2, 1]
@@ -289,7 +300,7 @@ class AnymalAStarRos(AnymalAStar):
         traj_ref.foot3_velocity.y = 0
         traj_ref.foot3_velocity.z = 0
 
-        traj_ref.foot3_isContact = True
+        traj_ref.foot3_isContact = self.lh_is_contact
 
         # TODO
         traj_ref.foot4_position.x = self.position_EE[2, 0]
@@ -300,7 +311,7 @@ class AnymalAStarRos(AnymalAStar):
         traj_ref.foot4_velocity.y = 0
         traj_ref.foot4_velocity.z = 0
 
-        traj_ref.foot4_isContact = True
+        traj_ref.foot4_isContact = self.rh_is_contact
 
         self.pub_whole_body_ref.publish(traj_ref)
 
