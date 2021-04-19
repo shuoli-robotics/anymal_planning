@@ -178,12 +178,12 @@ class AnymalAStarRos(AnymalAStar):
             self.pub_path.publish(m)
 
     def test_calc_lf_ee_traj_callback(self):
-        self.traj_time = 20.0
+        self.traj_time = 10.0
         time = [0,self.traj_time/4,self.traj_time/4*3,self.traj_time]
 
         lf_x_const = [self.position_EE[0,0],self.position_EE[0,0],self.position_EE[0,0],self.position_EE[0,0]]
-        lf_y_const = [self.position_EE[0, 1], self.position_EE[0, 1]-0.05, self.position_EE[0, 1]-0.05,self.position_EE[0, 1]-0.05]
-        lf_z_const = [self.position_EE[0, 2],self.position_EE[0, 2],self.position_EE[0, 2],self.position_EE[0, 2]]
+        lf_y_const = [self.position_EE[0, 1], self.position_EE[0, 1], self.position_EE[0, 1],self.position_EE[0, 1]]
+        lf_z_const = [self.position_EE[0, 2],self.position_EE[0, 2],self.position_EE[0, 2]+0.1,self.position_EE[0, 2]]
         lf_vel_const = [.0,.0,.0,.0]
 
         rf_x_const = [self.position_EE[1,0],self.position_EE[1,0],self.position_EE[1,0],self.position_EE[1,0]]
@@ -252,14 +252,18 @@ class AnymalAStarRos(AnymalAStar):
         if t > self.traj_time:
             return False
 
+        if t > self.traj_time/4:
+            self.lf_is_contact = False
+        else:
+            self.lf_is_contact = True
+
 
         traj_ref = whole_body_control_msg()
         traj_ref.com_position.x = self.mass_center_x_trajectory.__call__(t)
         traj_ref.com_position.y = self.mass_center_y_trajectory.__call__(t)
         traj_ref.com_position.z = self.mass_center_z_trajectory.__call__(t)
-        print(traj_ref.com_position.x)
-        print(traj_ref.com_position.y)
-        print(traj_ref.com_position.z)
+
+
 
         traj_ref.base_angular_velocity.x = .0
         traj_ref.base_angular_velocity.y = .0
@@ -273,6 +277,8 @@ class AnymalAStarRos(AnymalAStar):
         traj_ref.foot1_position.x = self.lf_x_trajectory.__call__(t)
         traj_ref.foot1_position.y = self.lf_y_trajectory.__call__(t)
         traj_ref.foot1_position.z = self.lf_z_trajectory.__call__(t)
+
+        print(traj_ref.foot1_position.z)
 
         traj_ref.foot1_velocity.x = self.lf_vx_trajectory.__call__(t)
         traj_ref.foot1_velocity.y = self.lf_vy_trajectory.__call__(t)
@@ -303,9 +309,9 @@ class AnymalAStarRos(AnymalAStar):
         traj_ref.foot3_isContact = self.lh_is_contact
 
         # TODO
-        traj_ref.foot4_position.x = self.position_EE[2, 0]
-        traj_ref.foot4_position.y = self.position_EE[2, 1]
-        traj_ref.foot4_position.z = self.position_EE[2, 2]
+        traj_ref.foot4_position.x = self.position_EE[3, 0]
+        traj_ref.foot4_position.y = self.position_EE[3, 1]
+        traj_ref.foot4_position.z = self.position_EE[3, 2]
 
         traj_ref.foot4_velocity.x = 0
         traj_ref.foot4_velocity.y = 0
