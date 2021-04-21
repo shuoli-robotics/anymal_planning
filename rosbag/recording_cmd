@@ -1,0 +1,2 @@
+rosbag record -O subset /log/loco/whole_body/positionWorldToComInWorldFrame /log/loco/whole_body/linearVelocityComInWorldFrame /log/loco/torso/measured/orientationWorldToControl /log/loco/leftFore/isGrounded /log/loco/rightFore/isGrounded /log/loco/leftHind/isGrounded /log/loco/rightHind/isGrounded /log/loco/leftFore/positionWorldToEEOriginInWorldFrame /log/loco/rightFore/positionWorldToEEOriginInWorldFrame /log/loco/leftHind/positionWorldToEEOriginInWorldFrame /log/loco/rightHind/positionWorldToEEOriginInWorldFrame /whole_body_control_reference
+

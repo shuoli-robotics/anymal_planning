@@ -11,6 +11,7 @@ from mayavi import mlab
 import logging
 from enum import Enum
 from scipy.interpolate import CubicHermiteSpline
+from datetime import datetime
 
 
 class AnymalStateNode:
@@ -342,7 +343,9 @@ class AnymalAStar:
 
         optimalPath = self.getOptimalPath()
         n = len(optimalPath)
+        self.traj_time = n * self.phaseTime
 
+        print("[astar] Start generating Footholds...")
         # generate footholds on terrain considering gaits
         for i, node in reversed(list(enumerate(optimalPath))):
             index = n-i-1
@@ -372,9 +375,7 @@ class AnymalAStar:
                     self.footholds[index].RF_pos = self.footholds[index-1].RF_pos
                     self.footholds[index].LH_pos = self.footholds[index - 1].LH_pos
 
-
-
-
+        print("[astar] Footholds are generated. Start generating trajectory...")
         # generate trajectories with the position constraints (footholds) above
 
         mass_center_x_const = np.zeros(len(self.footholds))
@@ -447,6 +448,7 @@ class AnymalAStar:
                     rh_z_const[i * 2 -1] = rh_z_const[i * 2]
 
 
+
         ee_velocity_const = np.zeros(lf_x_const.shape)
         ee_velocity_z_const = np.zeros(2*len(self.footholds)-1)
         self.lf_x_trajectory = CubicHermiteSpline(time, lf_x_const,ee_velocity_const)
@@ -462,15 +464,26 @@ class AnymalAStar:
         self.rh_y_trajectory = CubicHermiteSpline(time, rh_y_const, ee_velocity_const)
         self.rh_z_trajectory = CubicHermiteSpline(time_z, rh_z_const, ee_velocity_z_const)
 
-        self.center_point_x_trajectory = CubicHermiteSpline(time, mass_center_x_const,mass_center_vx_const)
-        self.center_point_y_trajectory = CubicHermiteSpline(time, mass_center_y_const, mass_center_vy_const)
-        self.center_point_z_trajectory = CubicHermiteSpline(time, mass_center_z_const, mass_center_vz_const)
+        self.lf_vx_trajectory = self.lf_x_trajectory.derivative()
+        self.lf_vy_trajectory = self.lf_y_trajectory.derivative()
+        self.lf_vz_trajectory = self.lf_z_trajectory.derivative()
+        self.rf_vx_trajectory = self.rf_x_trajectory.derivative()
+        self.rf_vy_trajectory = self.rf_y_trajectory.derivative()
+        self.rf_vz_trajectory = self.rf_z_trajectory.derivative()
+        self.lh_vx_trajectory = self.lh_x_trajectory.derivative()
+        self.lh_vy_trajectory = self.lh_y_trajectory.derivative()
+        self.lh_vz_trajectory = self.lh_z_trajectory.derivative()
+        self.rh_vx_trajectory = self.rh_x_trajectory.derivative()
+        self.rh_vy_trajectory = self.rh_y_trajectory.derivative()
+        self.rh_vz_trajectory = self.rh_z_trajectory.derivative()
+
+        self.mass_center_x_trajectory = CubicHermiteSpline(time, mass_center_x_const,mass_center_vx_const)
+        self.mass_center_y_trajectory = CubicHermiteSpline(time, mass_center_y_const, mass_center_vy_const)
+        self.mass_center_z_trajectory = CubicHermiteSpline(time, mass_center_z_const, mass_center_vz_const)
 
         self.planning_time = time
-
-
-
-
+        self.generated_trajectory_timestamp = datetime.now()
+        print("[astar] Trajectories are generated")
         temp = 1
 
     def generate_footholds_for_major_diagonal_EEs(self,node):
@@ -625,9 +638,9 @@ class AnymalAStar:
             rh_y[i] = self.rh_y_trajectory.__call__(t)
             rh_z[i] = self.rh_z_trajectory.__call__(t)
 
-            center_point_x[i] = self.center_point_x_trajectory.__call__(t)
-            center_point_y[i] = self.center_point_y_trajectory.__call__(t)
-            center_point_z[i] = self.center_point_z_trajectory.__call__(t)
+            center_point_x[i] = self.mass_center_x_trajectory.__call__(t)
+            center_point_y[i] = self.mass_center_y_trajectory.__call__(t)
+            center_point_z[i] = self.mass_center_z_trajectory.__call__(t)
 
         ax3[0].plot(time,lf_x,'r',time,rf_x,'y',time,lh_x,'b',time,rh_x,'g',time,center_point_x,'k')
         ax3[1].plot(time, lf_y, 'r', time, rf_y, 'y', time, lh_y, 'b', time, rh_y, 'g',time,center_point_y,'k')
@@ -640,8 +653,8 @@ class AnymalAStar:
 
 
 if __name__ == "__main__":
-    zmp_0 = (2.0,1.0,0.)
-    zmp_f = (3.0,1,0)
+    zmp_0 = (0.0,0.0,0.)
+    zmp_f = (3.0,0,0)
     anyAStar = AnymalAStar(zmp_0,zmp_f)
     anyAStar.run()
     optimalPath = anyAStar.getOptimalPath()

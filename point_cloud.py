@@ -14,8 +14,8 @@ class PointCloudBase:
         self.mapDigiti = 2
         self.length = 10
         self.center = (self.length/2,self.length/2)
-        self.X = np.arange(0, self.length, 0.05)
-        self.Y = np.arange(0, self.length, 0.05)
+        self.X = np.arange(-2, self.length, 0.05)
+        self.Y = np.arange(-2, self.length, 0.05)
         self.X = np.append(self.X, 10)
         self.Y = np.append(self.Y, 10)
         self.Z = np.zeros((len(self.X),len(self.Y)))
@@ -63,7 +63,8 @@ if __name__ == "__main__":
     pc = CentralLake()
     fig = mlab.figure(1)
     # ax = fig.gca(projection='3d')
-    # pc.show_point_cloud(fig)
+    pc.show_point_cloud(fig)
+    mlab.show()
 
     testX = 1.5
     testY = 1.0
