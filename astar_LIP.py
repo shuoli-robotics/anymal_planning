@@ -434,13 +434,13 @@ class AnymalAStar:
                 if self.footholds[i].leg_status == LegStatus.MAJOR_DIAGONAL:
                     lf_z_const[i * 2 -1] = lf_z_const[i * 2] + 0.08
                     rf_z_const[i * 2 -1] = rf_z_const[i * 2]
-                    lh_z_const[i * 2 -1] = lh_z_const[i * 2] + 0.08
-                    rh_z_const[i * 2 -1] = rh_z_const[i * 2]
+                    lh_z_const[i * 2 -1] = lh_z_const[i * 2]
+                    rh_z_const[i * 2 -1] = rh_z_const[i * 2]+ 0.08
                 elif self.footholds[i].leg_status == LegStatus.MINOR_DIAGONAL:
                     lf_z_const[i * 2 -1] = lf_z_const[i * 2]
                     rf_z_const[i * 2 -1] = rf_z_const[i * 2] + 0.08
-                    lh_z_const[i * 2 -1] = lh_z_const[i * 2]
-                    rh_z_const[i * 2 -1] = rh_z_const[i * 2] + 0.08
+                    lh_z_const[i * 2 -1] = lh_z_const[i * 2] + 0.08
+                    rh_z_const[i * 2 -1] = rh_z_const[i * 2]
                 elif self.footholds[i].leg_status == LegStatus.STAND_STILL:
                     lf_z_const[i * 2 -1] = lf_z_const[i * 2]
                     rf_z_const[i * 2 -1] = rf_z_const[i * 2]
