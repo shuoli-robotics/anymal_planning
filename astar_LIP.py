@@ -9,9 +9,7 @@ import math
 import point_cloud as pc
 from mayavi import mlab
 import logging
-from enum import Enum
-from scipy.interpolate import CubicHermiteSpline
-from datetime import datetime
+
 
 
 class AnymalStateNode:
@@ -22,24 +20,7 @@ class AnymalStateNode:
         self.f = g + h
         self.index = index
 
-class LegStatus(Enum):
-    STAND_STILL = 1   # stand still
-    MAJOR_DIAGONAL = 2 # LF and RH swing to current position, RF and LH keep static
-    MINOR_DIAGONAL = 3 # LF and RH keep static, RF and LH swing to current position
 
-class FootholdStatus:
-    def __init__(self):
-        self.leg_status = LegStatus.STAND_STILL
-
-        # Positions of each end effector
-        self.LF_pos = []
-        self.RF_pos = []
-        self.LH_pos = []
-        self.RH_pos = []
-
-        self.heading = 0.0
-
-        self.lip_states = []
 
 
 
@@ -339,179 +320,7 @@ class AnymalAStar:
         #     print(node)
         return optimalPath
 
-    def generate_EE_trajectory(self):
 
-        optimalPath = self.getOptimalPath()
-        n = len(optimalPath)
-        self.traj_time = n * self.phaseTime
-
-        print("[astar] Start generating Footholds...")
-        # generate footholds on terrain considering gaits
-        for i, node in reversed(list(enumerate(optimalPath))):
-            index = n-i-1
-            self.footholds[index] = FootholdStatus()
-            self.footholds[index].lip_states = node
-            if index == 0:
-                self.footholds[index].LF_pos , self.footholds[index].RH_pos  = self.generate_footholds_for_major_diagonal_EEs(node)
-                self.footholds[index].RF_pos , self.footholds[index].LH_pos = self.generate_footholds_for_minor_diagonal_EEs(node)
-
-            else:
-                # pass
-                if self.footholds[index-1].leg_status == LegStatus.STAND_STILL:
-                    self.footholds[index].leg_status = LegStatus.MAJOR_DIAGONAL
-                    self.footholds[index].LF_pos , self.footholds[index].RH_pos = self.generate_footholds_for_major_diagonal_EEs(node)
-                    self.footholds[index].RF_pos = self.footholds[index-1].RF_pos
-                    self.footholds[index].LH_pos = self.footholds[index - 1].LH_pos
-
-                elif self.footholds[index-1].leg_status == LegStatus.MAJOR_DIAGONAL:
-                    self.footholds[index].leg_status = LegStatus.MINOR_DIAGONAL
-                    self.footholds[index].RF_pos , self.footholds[index].LH_pos = self.generate_footholds_for_minor_diagonal_EEs(node)
-                    self.footholds[index].LF_pos = self.footholds[index-1].LF_pos
-                    self.footholds[index].RH_pos = self.footholds[index - 1].RH_pos
-
-                elif self.footholds[index-1].leg_status == LegStatus.MINOR_DIAGONAL:
-                    self.footholds[index].leg_status = LegStatus.MAJOR_DIAGONAL
-                    self.footholds[index].LF_pos , self.footholds[index].RH_pos = self.generate_footholds_for_major_diagonal_EEs(node)
-                    self.footholds[index].RF_pos = self.footholds[index-1].RF_pos
-                    self.footholds[index].LH_pos = self.footholds[index - 1].LH_pos
-
-        print("[astar] Footholds are generated. Start generating trajectory...")
-        # generate trajectories with the position constraints (footholds) above
-
-        mass_center_x_const = np.zeros(len(self.footholds))
-        mass_center_vx_const = np.zeros(mass_center_x_const.shape)
-        mass_center_y_const = np.zeros(mass_center_x_const.shape)
-        mass_center_vy_const = np.zeros(mass_center_x_const.shape)
-        mass_center_z_const = np.zeros(mass_center_x_const.shape)
-        mass_center_vz_const = np.zeros(mass_center_x_const.shape)
-
-        lf_x_const = np.zeros(len(self.footholds))
-        lf_y_const = np.zeros(lf_x_const.shape)
-        lf_z_const = np.zeros(len(self.footholds)*2-1)
-
-        rf_x_const = np.zeros(lf_x_const.shape)
-        rf_y_const = np.zeros(lf_x_const.shape)
-        rf_z_const = np.zeros(2*len(self.footholds)-1)
-
-        lh_x_const = np.zeros(lf_x_const.shape)
-        lh_y_const = np.zeros(lf_x_const.shape)
-        lh_z_const = np.zeros(2*len(self.footholds)-1)
-
-        rh_x_const = np.zeros(lf_x_const.shape)
-        rh_y_const = np.zeros(lf_x_const.shape)
-        rh_z_const = np.zeros(2*len(self.footholds)-1)
-
-        time = np.zeros(lf_x_const.shape)
-        time_z = np.zeros(len(self.footholds)*2-1)
-
-        for i in self.footholds:
-            time[i] = i*self.phaseTime
-
-            mass_center_x_const[i] = self.footholds[i].lip_states[3]
-            mass_center_vx_const[i] = self.footholds[i].lip_states[4]
-            mass_center_y_const[i] = self.footholds[i].lip_states[5]
-            mass_center_vy_const[i] = self.footholds[i].lip_states[6]
-            mass_center_z_const[i] = self.z
-
-
-            lf_x_const[i] = self.footholds[i].LF_pos[0]
-            lf_y_const[i] = self.footholds[i].LF_pos[1]
-            rf_x_const[i] = self.footholds[i].RF_pos[0]
-            rf_y_const[i] = self.footholds[i].RF_pos[1]
-            lh_x_const[i] = self.footholds[i].LH_pos[0]
-            lh_y_const[i] = self.footholds[i].LH_pos[1]
-            rh_x_const[i] = self.footholds[i].RH_pos[0]
-            rh_y_const[i] = self.footholds[i].RH_pos[1]
-
-            # assign values for z direction
-            time_z[i * 2] = i * self.phaseTime
-            lf_z_const[i * 2] = self.footholds[i].LF_pos[2]
-            rf_z_const[i * 2] = self.footholds[i].RF_pos[2]
-            lh_z_const[i * 2] = self.footholds[i].LH_pos[2]
-            rh_z_const[i * 2] = self.footholds[i].RH_pos[2]
-            if i != 0:
-                time_z[i * 2-1] = i * self.phaseTime - 0.5 * self.phaseTime
-                if self.footholds[i].leg_status == LegStatus.MAJOR_DIAGONAL:
-                    lf_z_const[i * 2 -1] = lf_z_const[i * 2] + 0.08
-                    rf_z_const[i * 2 -1] = rf_z_const[i * 2]
-                    lh_z_const[i * 2 -1] = lh_z_const[i * 2]
-                    rh_z_const[i * 2 -1] = rh_z_const[i * 2]+ 0.08
-                elif self.footholds[i].leg_status == LegStatus.MINOR_DIAGONAL:
-                    lf_z_const[i * 2 -1] = lf_z_const[i * 2]
-                    rf_z_const[i * 2 -1] = rf_z_const[i * 2] + 0.08
-                    lh_z_const[i * 2 -1] = lh_z_const[i * 2] + 0.08
-                    rh_z_const[i * 2 -1] = rh_z_const[i * 2]
-                elif self.footholds[i].leg_status == LegStatus.STAND_STILL:
-                    lf_z_const[i * 2 -1] = lf_z_const[i * 2]
-                    rf_z_const[i * 2 -1] = rf_z_const[i * 2]
-                    lh_z_const[i * 2 -1] = lh_z_const[i * 2]
-                    rh_z_const[i * 2 -1] = rh_z_const[i * 2]
-
-
-
-        ee_velocity_const = np.zeros(lf_x_const.shape)
-        ee_velocity_z_const = np.zeros(2*len(self.footholds)-1)
-        self.lf_x_trajectory = CubicHermiteSpline(time, lf_x_const,ee_velocity_const)
-        self.lf_y_trajectory = CubicHermiteSpline(time, lf_y_const, ee_velocity_const)
-        self.lf_z_trajectory = CubicHermiteSpline(time_z, lf_z_const, ee_velocity_z_const)
-        self.rf_x_trajectory = CubicHermiteSpline(time, rf_x_const, ee_velocity_const)
-        self.rf_y_trajectory = CubicHermiteSpline(time, rf_y_const, ee_velocity_const)
-        self.rf_z_trajectory = CubicHermiteSpline(time_z, rf_z_const, ee_velocity_z_const)
-        self.lh_x_trajectory = CubicHermiteSpline(time, lh_x_const, ee_velocity_const)
-        self.lh_y_trajectory = CubicHermiteSpline(time, lh_y_const, ee_velocity_const)
-        self.lh_z_trajectory = CubicHermiteSpline(time_z, lh_z_const, ee_velocity_z_const)
-        self.rh_x_trajectory = CubicHermiteSpline(time, rh_x_const, ee_velocity_const)
-        self.rh_y_trajectory = CubicHermiteSpline(time, rh_y_const, ee_velocity_const)
-        self.rh_z_trajectory = CubicHermiteSpline(time_z, rh_z_const, ee_velocity_z_const)
-
-        self.lf_vx_trajectory = self.lf_x_trajectory.derivative()
-        self.lf_vy_trajectory = self.lf_y_trajectory.derivative()
-        self.lf_vz_trajectory = self.lf_z_trajectory.derivative()
-        self.rf_vx_trajectory = self.rf_x_trajectory.derivative()
-        self.rf_vy_trajectory = self.rf_y_trajectory.derivative()
-        self.rf_vz_trajectory = self.rf_z_trajectory.derivative()
-        self.lh_vx_trajectory = self.lh_x_trajectory.derivative()
-        self.lh_vy_trajectory = self.lh_y_trajectory.derivative()
-        self.lh_vz_trajectory = self.lh_z_trajectory.derivative()
-        self.rh_vx_trajectory = self.rh_x_trajectory.derivative()
-        self.rh_vy_trajectory = self.rh_y_trajectory.derivative()
-        self.rh_vz_trajectory = self.rh_z_trajectory.derivative()
-
-        self.mass_center_x_trajectory = CubicHermiteSpline(time, mass_center_x_const,mass_center_vx_const)
-        self.mass_center_y_trajectory = CubicHermiteSpline(time, mass_center_y_const, mass_center_vy_const)
-        self.mass_center_z_trajectory = CubicHermiteSpline(time, mass_center_z_const, mass_center_vz_const)
-
-        self.planning_time = time
-        self.generated_trajectory_timestamp = datetime.now()
-        print("[astar] Trajectories are generated")
-        temp = 1
-
-    def generate_footholds_for_major_diagonal_EEs(self,node):
-        R_E_B = np.array(
-            [[math.cos(self.heading), math.sin(self.heading)], [-math.sin(self.heading), math.cos(self.heading)]])
-
-        lf_pos_h_e = np.around(R_E_B.transpose().dot(self.LF_b) + np.asarray(node[0:2]),   1)
-
-        lf_pos_v_e = self.pointCloud.pc[(lf_pos_h_e[0],lf_pos_h_e[1])].z
-
-        rh_pos_h_e = np.around(R_E_B.transpose().dot(self.RH_b) + np.asarray(node[0:2]), 1)
-        rh_pos_v_e = self.pointCloud.pc[(rh_pos_h_e[0],rh_pos_h_e[1])].z
-
-        return (np.append(lf_pos_h_e,lf_pos_v_e), np.append(rh_pos_h_e,rh_pos_v_e))
-
-
-    def generate_footholds_for_minor_diagonal_EEs(self,node):
-        R_E_B = np.array(
-            [[math.cos(self.heading), math.sin(self.heading)], [-math.sin(self.heading), math.cos(self.heading)]])
-
-        rf_pos_h_e = np.around(R_E_B.transpose().dot(self.RF_b) + np.asarray(node[0:2]),   1)
-
-        rf_pos_v_e = self.pointCloud.pc[(rf_pos_h_e[0],rf_pos_h_e[1])].z
-
-        lh_pos_h_e = np.around(R_E_B.transpose().dot(self.LH_b) + np.asarray(node[0:2]), 1)
-        lh_pos_v_e = self.pointCloud.pc[(lh_pos_h_e[0],lh_pos_h_e[1])].z
-
-        return (np.append(rf_pos_h_e,rf_pos_v_e), np.append(lh_pos_h_e,lh_pos_v_e))
 
 
 
@@ -519,7 +328,6 @@ class AnymalAStar:
     def plot_result(self):
         fig1, ax = plt.subplots(2,2)
         fig2, ax2 = plt.subplots(1, 2)
-        fig3, ax3 = plt.subplots(1, 3)
 
         fig = mlab.figure(0)
         self.pointCloud.show_point_cloud(fig)
@@ -550,15 +358,7 @@ class AnymalAStar:
             zmp_y[len(self.optimalPath)-1-i] = node[1]
             mlab.plot3d(x_line,y_line,z_line,figure=fig)
 
-        footholds_lf = np.empty(shape=[0, 3])
-        footholds_rf = np.empty(shape=[0, 3])
-        footholds_lh = np.empty(shape=[0, 3])
-        footholds_rh = np.empty(shape=[0, 3])
-        for i in self.footholds:
-            footholds_lf = np.vstack((footholds_lf,self.footholds[i].LF_pos))
-            footholds_rf = np.vstack((footholds_rf, self.footholds[i].RF_pos))
-            footholds_lh = np.vstack((footholds_lh, self.footholds[i].LH_pos))
-            footholds_rh = np.vstack((footholds_rh, self.footholds[i].RH_pos))
+
 
         # mlab.points3d(footholds_lf[:,0], footholds_lf[:,1], footholds_lf[:,2], figure=fig,scale_factor=.05,color=(1,0,0))
         # mlab.points3d(footholds_rf[:,0], footholds_rf[:,1], footholds_rf[:,2], figure=fig,scale_factor=.05,color=(1,1,0))
@@ -603,53 +403,8 @@ class AnymalAStar:
         ax2[0].set_ylabel('y[m]')
         ax2[1].set_title('closed list')
         ax2[1].set_xlabel('x[m]')
+        return fig
 
-        sample_number = 200
-        time = np.linspace(0,self.planning_time[-1],sample_number)
-        lf_x = np.zeros(sample_number)
-        lf_y = np.zeros(sample_number)
-        lf_z = np.zeros(sample_number)
-        rf_x = np.zeros(sample_number)
-        rf_y = np.zeros(sample_number)
-        rf_z = np.zeros(sample_number)
-        lh_x = np.zeros(sample_number)
-        lh_y = np.zeros(sample_number)
-        lh_z = np.zeros(sample_number)
-        rh_x = np.zeros(sample_number)
-        rh_y = np.zeros(sample_number)
-        rh_z = np.zeros(sample_number)
-
-        center_point_x = np.zeros(sample_number)
-        center_point_y = np.zeros(sample_number)
-        center_point_z = np.zeros(sample_number)
-
-
-        for i,t in enumerate(time):
-            lf_x[i] = self.lf_x_trajectory.__call__(t)
-            lf_y[i] = self.lf_y_trajectory.__call__(t)
-            lf_z[i] = self.lf_z_trajectory.__call__(t)
-            rf_x[i] = self.rf_x_trajectory.__call__(t)
-            rf_y[i] = self.rf_y_trajectory.__call__(t)
-            rf_z[i] = self.rf_z_trajectory.__call__(t)
-            lh_x[i] = self.lh_x_trajectory.__call__(t)
-            lh_y[i] = self.lh_y_trajectory.__call__(t)
-            lh_z[i] = self.lh_z_trajectory.__call__(t)
-            rh_x[i] = self.rh_x_trajectory.__call__(t)
-            rh_y[i] = self.rh_y_trajectory.__call__(t)
-            rh_z[i] = self.rh_z_trajectory.__call__(t)
-
-            center_point_x[i] = self.mass_center_x_trajectory.__call__(t)
-            center_point_y[i] = self.mass_center_y_trajectory.__call__(t)
-            center_point_z[i] = self.mass_center_z_trajectory.__call__(t)
-
-        ax3[0].plot(time,lf_x,'r',time,rf_x,'y',time,lh_x,'b',time,rh_x,'g',time,center_point_x,'k')
-        ax3[1].plot(time, lf_y, 'r', time, rf_y, 'y', time, lh_y, 'b', time, rh_y, 'g',time,center_point_y,'k')
-        ax3[2].plot(time, lf_z,'r')
-
-        mlab.plot3d(lf_x, lf_y, lf_z, figure=fig, line_width = 0.1, color=(1,0,0))
-        mlab.plot3d(center_point_x, center_point_y, center_point_z, figure=fig, line_width=0.1, color=(0, 0, 0))
-        plt.show()
-        mlab.show()
 
 
 if __name__ == "__main__":
@@ -658,6 +413,7 @@ if __name__ == "__main__":
     anyAStar = AnymalAStar(zmp_0,zmp_f)
     anyAStar.run()
     optimalPath = anyAStar.getOptimalPath()
-    anyAStar.generate_EE_trajectory()
     anyAStar.plot_result()
+    plt.show()
+    mlab.show()
 

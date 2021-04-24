@@ -1,5 +1,5 @@
 from astar_LIP import AnymalAStar
-from astar_LIP import LegStatus
+from astar_whole_body import AnymalAStarWholeBody
 import numpy as np
 from scipy.interpolate import CubicHermiteSpline
 from datetime import datetime
@@ -18,9 +18,12 @@ from geometry_msgs.msg import QuaternionStamped
 from anymal_msgs.msg import AnymalState
 import math
 
-class AnymalAStarRos(AnymalAStar):
+
+
+
+class AnymalAStarRos(AnymalAStarWholeBody):
     def __init__(self,zmp_0, zmp_f):
-        AnymalAStar.__init__(self,zmp_0, zmp_f)
+        super().__init__(self,zmp_0, zmp_f)
         # LIP's current states
         self.zmp = np.zeros((1,3))
         self.mass_point_pos = np.zeros((1,3))
@@ -194,6 +197,8 @@ class AnymalAStarRos(AnymalAStar):
             m.points.append(p1)
             # print("[astar_ros] display_path_callback p0 = {},p1 = {}".format(p0,p1))
             self.pub_path.publish(m)
+
+
 
     def test_calc_lf_ee_traj_callback(self):
         self.traj_time = 10.0
@@ -387,6 +392,17 @@ class AnymalAStarRos(AnymalAStar):
         print("Planner is publishing! mass center is({},{},{})".format(traj_ref.com_position.x,traj_ref.com_position.y,traj_ref.com_position.z))
 
         self.pub_whole_body_ref.publish(traj_ref)
+
+
+
+if __name__ == "__main__":
+    zmp_0 = (0.0, 0.0, 0.)
+    zmp_f = (3.0, 0, 0)
+    anyAStar = AnymalAStarRos(zmp_0, zmp_f)
+    anyAStar.run()
+    optimalPath = anyAStar.getOptimalPath()
+    anyAStar.generate_EE_trajectory()
+    anyAStar.plot_result()
 
 
 
