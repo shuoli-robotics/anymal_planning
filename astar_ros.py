@@ -25,17 +25,10 @@ import math
 class AnymalAStarRos(AnymalAStarWholeBody):
     def __init__(self,zmp_0, zmp_f):
         super().__init__(zmp_0, zmp_f)
+
+        self.use_ros = True
+
         # LIP's current states
-        self.zmp = np.zeros((1,3))
-        self.mass_point_pos = np.zeros((1,3))
-        self.mass_point_vel = np.zeros((1, 3))
-        # Anymal's feet states
-        self.on_ground = [True,True,True,True] # LF, RF,LH, RH
-
-        self.trajectory_ready = False
-
-        self.position_EE = np.zeros((4,3))
-
         self.lf_is_contact = True
         self.rf_is_contact = True
         self.lh_is_contact = True
@@ -213,10 +206,10 @@ class AnymalAStarRos(AnymalAStarWholeBody):
     def publish_whole_body_trajectory_reference(self):
 
         t = (datetime.now()-self.generated_trajectory_timestamp).total_seconds()
-        print("current time is {}".format(t))
-        print("planned time is {}".format(self.traj_time))
+        # print("current time is {}".format(t))
+        # print("planned time is {}".format(self.traj_time))
         if t > self.traj_time:
-            print("publishing function returns")
+            # print("publishing function returns")
             return False
 
         phase_counter = 0
@@ -225,7 +218,7 @@ class AnymalAStarRos(AnymalAStarWholeBody):
             if t > (phase_counter-1) * self.phaseTime and t < phase_counter * self.phaseTime:
                 t_in_phase = t - (phase_counter-1) * self.phaseTime
                 break
-        print("The Anymal is now at phase {}".format(phase_counter))
+        # print("The Anymal is now at phase {}".format(phase_counter))
 
         if self.footholds[phase_counter].leg_status == LegStatus.MAJOR_DIAGONAL:
             self.lf_is_contact = False
@@ -238,7 +231,7 @@ class AnymalAStarRos(AnymalAStarWholeBody):
             self.rf_is_contact = False
             self.lh_is_contact = False
 
-        print("Contact:lf={},rf={},lh={},rh={}".format(self.lf_is_contact,self.rf_is_contact,self.lh_is_contact,self.rh_is_contact))
+        # print("Contact:lf={},rf={},lh={},rh={}".format(self.lf_is_contact,self.rf_is_contact,self.lh_is_contact,self.rh_is_contact))
 
         traj_ref = whole_body_control_msg()
 
@@ -322,7 +315,7 @@ class AnymalAStarRos(AnymalAStarWholeBody):
 
         traj_ref.foot4_isContact = self.rh_is_contact
 
-        print("Planner is publishing! mass center is({},{},{})".format(traj_ref.com_position.x,traj_ref.com_position.y,traj_ref.com_position.z))
+        # print("Planner is publishing! mass center is({},{},{})".format(traj_ref.com_position.x,traj_ref.com_position.y,traj_ref.com_position.z))
 
         self.pub_whole_body_ref.publish(traj_ref)
 

@@ -30,6 +30,19 @@ class AnymalAStarWholeBody(AnymalAStar):
     def __init__(self,zmp_0, zmp_f):
         AnymalAStar.__init__(self,zmp_0, zmp_f)
 
+        # These variables are used to store Anymal's current position and velocity
+        # when ros topics are used, they will be rewritten by Anymal's current measured states
+        self.zmp = np.array([zmp_0[0],zmp_0[1],zmp_0[2]])
+        self.mass_point_pos = np.array([zmp_0[0],zmp_0[1],self.z])
+        self.mass_point_vel = np.zeros((1, 3))
+        self.on_ground = [True,True,True,True] # LF, RF,LH, RH
+        self.trajectory_ready = False
+        self.position_EE = np.zeros((4,3))
+
+        # This variable is used to indicate if ROS is used. If False, the first planned footholds will be generated
+        # by default standing setup. Otherwise, the first footholds is the Anymal's current standing footholds
+        self.use_ros = False
+
         self.trajectory_ready = False
 
     def generate_EE_trajectory(self):
@@ -45,9 +58,15 @@ class AnymalAStarWholeBody(AnymalAStar):
             self.footholds[index] = FootholdStatus()
             self.footholds[index].lip_states = node
             if index == 0:
-                self.footholds[index].LF_pos , self.footholds[index].RH_pos  = self.generate_footholds_for_major_diagonal_EEs(node)
-                self.footholds[index].RF_pos , self.footholds[index].LH_pos = self.generate_footholds_for_minor_diagonal_EEs(node)
-
+                if self.use_ros == False:
+                    self.footholds[index].LF_pos, self.footholds[index].RH_pos = self.generate_footholds_for_major_diagonal_EEs(node)
+                    self.footholds[index].RF_pos, self.footholds[index].LH_pos = self.generate_footholds_for_minor_diagonal_EEs(node)
+                else:
+                    print("[astar] Use measured footholds for generating trajectories")
+                    self.footholds[index].LF_pos = self.position_EE[0]
+                    self.footholds[index].RF_pos = self.position_EE[1]
+                    self.footholds[index].LH_pos = self.position_EE[2]
+                    self.footholds[index].RH_pos = self.position_EE[3]
             else:
                 # pass
                 if self.footholds[index-1].leg_status == LegStatus.STAND_STILL:

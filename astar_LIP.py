@@ -101,7 +101,7 @@ class AnymalAStar:
                 break
             else:
                 self.numSearchTimes = self.numSearchTimes + 1
-                print("A* is running. searching ID is {}".format(self.numSearchTimes))
+                # print("A* is running. searching ID is {}".format(self.numSearchTimes))
                 self.searchChildren(currentNode)
 
 
