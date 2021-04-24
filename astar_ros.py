@@ -1,8 +1,9 @@
-from astar_LIP import AnymalAStar
 from astar_whole_body import AnymalAStarWholeBody
 import numpy as np
 from scipy.interpolate import CubicHermiteSpline
 from datetime import datetime
+from astar_whole_body import LegStatus
+from astar_whole_body import FootholdStatus
 
 import rospy
 from visualization_msgs.msg import Marker
@@ -23,7 +24,7 @@ import math
 
 class AnymalAStarRos(AnymalAStarWholeBody):
     def __init__(self,zmp_0, zmp_f):
-        super().__init__(self,zmp_0, zmp_f)
+        super().__init__(zmp_0, zmp_f)
         # LIP's current states
         self.zmp = np.zeros((1,3))
         self.mass_point_pos = np.zeros((1,3))
@@ -53,25 +54,11 @@ class AnymalAStarRos(AnymalAStarWholeBody):
         rospy.Subscriber("/log/loco/leftHind/positionWorldToEEOriginInWorldFrame", Vector3Stamped, self.set_EE_LH_callback)
         rospy.Subscriber("/log/loco/rightHind/positionWorldToEEOriginInWorldFrame", Vector3Stamped, self.set_EE_RH_callback)
         rospy.Subscriber("calc_zmp_cmd", Bool, self.calc_zmp_callback)
-        rospy.Subscriber("set_goal", Vector3Stamped, self.set_goal_callback)
-        rospy.Subscriber("astar_run", Vector3Stamped, self.run_callback)
-        rospy.Subscriber("display_path", Bool, self.display_path_callback)
 
         rospy.init_node('AnymalAStar')
         self.pub_LIP = rospy.Publisher("LIP", Marker, queue_size=10)
         self.pub_path = rospy.Publisher("optimal_path", Marker, queue_size=30)
         self.pub_whole_body_ref = rospy.Publisher("/whole_body_control_reference", whole_body_control_msg, queue_size=30)
-
-
-
-    def calc_zmp(self):
-        contact_feet_position = []
-        for i,foot in enumerate(self.on_ground):
-            if foot:
-                contact_feet_position.append(self.position_EE[i])
-        self.zmp = np.mean(contact_feet_position,axis=0)
-        print(self.zmp)
-
 
     def calc_zmp_callback(self,data):
         if data:
@@ -125,79 +112,25 @@ class AnymalAStarRos(AnymalAStarWholeBody):
     def set_velocity_of_mass_callback(self,data):
         self.mass_point_vel = [data.vector.x,data.vector.y,data.vector.z]
 
-    def set_goal_callback(self,data):
-        self.goal = [data.vector.x,data.vector.y,data.vector.z]
-
     def set_orientation_callback(self,data):
         self.torso_orientation = [data.quaternion.x,data.quaternion.y,data.quaternion.z,data.quaternion.w]
 
-    def run_callback(self,data):
+    def calc_zmp(self):
+        contact_feet_position = []
+        for i,foot in enumerate(self.on_ground):
+            if foot:
+                contact_feet_position.append(self.position_EE[i])
+        self.zmp = np.mean(contact_feet_position,axis=0)
+        return self.zmp
 
-        self.calc_zmp()
-        self.zmp[0] = round(self.zmp[0],1)
-        self.zmp[1] = round(self.zmp[1], 1)
-        self.zmp[2] = round(self.zmp[2], 1)
-        self.start = tuple(self.zmp) + (round(self.mass_point_pos[0],1),round(self.mass_point_vel[0],1),round(self.mass_point_pos[1],1),round(self.mass_point_vel[1],1))
-        self.goal = (data.vector.x, data.vector.y, data.vector.z)
+    def run(self):
+        self.set_start(tuple(self.calc_zmp()) + (self.mass_point_pos[0], self.mass_point_vel[0], self.mass_point_pos[1], self.mass_point_vel[1]))
         print("[astar_ros] astar.run() is called")
         print("The start node is {}".format(self.start))
         print("The goal node is {}".format(self.goal))
         self.closedList = {}
         self.openList = {}
-        self.run()
-
-    def run_from_current_position(self,target):
-        self.calc_zmp()
-        self.zmp[0] = round(self.zmp[0], 1)
-        self.zmp[1] = round(self.zmp[1], 1)
-        self.zmp[2] = round(self.zmp[2], 1)
-        self.start = tuple(self.zmp) + (
-        round(self.mass_point_pos[0], 1), round(self.mass_point_vel[0], 1), round(self.mass_point_pos[1], 1),
-        round(self.mass_point_vel[1], 1))
-        self.goal = target
-        print("[astar_ros] astar.run() is called")
-        print("The start node is {}".format(self.start))
-        print("The goal node is {}".format(self.goal))
-        self.closedList = {}
-        self.openList = {}
-        self.run()
-
-    def display_path_callback(self,data):
-        print("[astar_ros] display_path_callback")
-        op = self.getOptimalPath()
-        zmp_x = np.zeros(len(op))
-        zmp_y = np.zeros(len(op))
-        mass_point_x = np.zeros(len(op))
-        mass_point_y = np.zeros(len(op))
-        mass_point_vx = np.zeros(len(op))
-        mass_point_vy = np.zeros(len(op))
-
-        for i, node in enumerate(op):
-            x = node[3]
-            y = node[5]
-            z = self.z
-
-            m = Marker()
-            m.header.frame_id = 'odom'
-            m.header.stamp = rospy.Time.now()
-            m.ns = 'anyplan_listener'
-            # m.pose.orientation.w = 1.0
-            m.action = Marker.ADD
-            m.id = i
-            m.type = Marker.LINE_LIST
-            m.color.r = 0.4
-            m.color.g = 0
-            m.color.b = 0
-            m.color.a = 1.0
-            m.scale.x = 0.01
-            m.lifetime = rospy.Duration.from_sec(100)
-            p0 = Point(node[0], node[1], node[2])
-            p1 = Point(node[3], node[5], self.z)
-            m.points.append(p0)
-            m.points.append(p1)
-            # print("[astar_ros] display_path_callback p0 = {},p1 = {}".format(p0,p1))
-            self.pub_path.publish(m)
-
+        super().run()
 
 
     def test_calc_lf_ee_traj_callback(self):
@@ -396,13 +329,19 @@ class AnymalAStarRos(AnymalAStarWholeBody):
 
 
 if __name__ == "__main__":
-    zmp_0 = (0.0, 0.0, 0.)
-    zmp_f = (3.0, 0, 0)
-    anyAStar = AnymalAStarRos(zmp_0, zmp_f)
-    anyAStar.run()
-    optimalPath = anyAStar.getOptimalPath()
-    anyAStar.generate_EE_trajectory()
-    anyAStar.plot_result()
+    zmp_0 = (0.0,0.0,0.)
+    zmp_f = (8.0,0,0)
+    astar = AnymalAStarRos(zmp_0,zmp_f)
+    wait_time = 1
+    r_wait_rate = rospy.Rate(1/wait_time)
+    r_wait_rate.sleep()
+    astar.run()
+
+    r = rospy.Rate(400)
+
+    while not rospy.is_shutdown():
+        astar.publish_whole_body_trajectory_reference()
+        r.sleep()
 
 
 
