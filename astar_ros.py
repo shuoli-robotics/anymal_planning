@@ -18,6 +18,7 @@ from std_msgs.msg import Bool
 from geometry_msgs.msg import QuaternionStamped
 from anymal_msgs.msg import AnymalState
 import math
+import threading
 
 
 
@@ -332,9 +333,16 @@ if __name__ == "__main__":
     astar.generate_EE_trajectory()
 
     r = rospy.Rate(400)
+    t1 = threading.Thread(target=astar.run)
+
+    loop_counter = 0
 
     while not rospy.is_shutdown():
+        loop_counter += 1
         astar.publish_whole_body_trajectory_reference()
+        if loop_counter % 400 == 0 and not t1.is_alive():
+            t1 = threading.Thread(target=astar.run)
+            t1.start()
         r.sleep()
 
 
