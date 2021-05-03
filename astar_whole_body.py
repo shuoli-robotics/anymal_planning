@@ -228,7 +228,7 @@ class AnymalAStarWholeBody(AnymalAStar):
         self.closedList = {}
         self.openList = {}
         super().run()
-        self.generate_EE_trajectory()
+        # self.generate_EE_trajectory()
 
     def set_start(self,start_node):
         self.start = (round(start_node[0],1),round(start_node[1],1),round(start_node[2],1),\
@@ -299,12 +299,17 @@ class AnymalAStarWholeBody(AnymalAStar):
 
 if __name__ == "__main__":
     zmp_0 = (0.0,0.0,0.)
-    zmp_f = (3.0,0,0)
+    zmp_f = (8.0,0,0)
     anyAStar = AnymalAStarWholeBody(zmp_0,zmp_f)
     anyAStar.run()
+    anyAStar.generate_EE_trajectory()
 
     anyAStar.set_start((2.0,2.32,0.0, 2.05,0.41,2.31,0.10))
+
+    time_start = datetime.now()
     anyAStar.run()
+    anyAStar.generate_EE_trajectory()
+    print("The time of A* is {}".format((datetime.now()-time_start).total_seconds()))
 
     optimalPath = anyAStar.getOptimalPath()
     anyAStar.plot_result()

@@ -323,12 +323,13 @@ class AnymalAStarRos(AnymalAStarWholeBody):
 
 if __name__ == "__main__":
     zmp_0 = (0.0,0.0,0.)
-    zmp_f = (8.0,0,0)
+    zmp_f = (5.0,0,0)
     astar = AnymalAStarRos(zmp_0,zmp_f)
     wait_time = 1
     r_wait_rate = rospy.Rate(1/wait_time)
     r_wait_rate.sleep()
     astar.run()
+    astar.generate_EE_trajectory()
 
     r = rospy.Rate(400)
 
