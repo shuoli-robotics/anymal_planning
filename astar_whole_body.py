@@ -38,6 +38,10 @@ class AnymalAStarWholeBody(AnymalAStar):
         self.on_ground = [True,True,True,True] # LF, RF,LH, RH
         self.trajectory_ready = False
         self.position_EE = np.zeros((4,3))
+        self.position_EE[0], self.position_EE[3] = self.generate_footholds_for_major_diagonal_EEs(self.start)
+        self.position_EE[1], self.position_EE[2] = self.generate_footholds_for_minor_diagonal_EEs(self.start)
+
+        self.next_support_status = LegStatus.STAND_STILL
 
         # This variable is used to indicate if ROS is used. If False, the first planned footholds will be generated
         # by default standing setup. Otherwise, the first footholds is the Anymal's current standing footholds
@@ -45,7 +49,32 @@ class AnymalAStarWholeBody(AnymalAStar):
 
         self.trajectory_ready = False
 
+    def calc_zmp(self):
+        contact_feet_position = []
+        for i,foot in enumerate(self.on_ground):
+            if foot:
+                contact_feet_position.append(self.position_EE[i])
+        self.zmp = np.mean(contact_feet_position,axis=0)
+        return self.zmp
+
+    def calc_surporting_legs(self):
+        if self.on_ground[0] and self.on_ground[1] and self.on_ground[1] and self.on_ground[1]:
+            self.current_support_status = LegStatus.STAND_STILL
+            self.next_support_status = LegStatus.MAJOR_DIAGONAL
+        elif (self.on_ground[0] and self.on_ground[3]) and not (self.on_ground[1] or self.on_ground[2]):
+            self.current_support_status = LegStatus.MAJOR_DIAGONAL
+            self.next_support_status = LegStatus.MINOR_DIAGONAL
+        elif not (self.on_ground[0] or self.on_ground[3]) and (self.on_ground[1] or self.on_ground[2]):
+            self.current_support_status = LegStatus.MINOR_DIAGONAL
+            self.next_support_status = LegStatus.MAJOR_DIAGONAL
+        else:
+            print("[Error] [astar_whole_body::calc_suporting_legs] Next supporting legs are wrong! ")
+
+
     def generate_EE_trajectory(self):
+        # calculate current ZMP and what the next supporting leg group should be
+        self.calc_zmp()
+        self.calc_surporting_legs()
 
         optimalPath = self.getOptimalPath()
         n = len(optimalPath)
@@ -53,6 +82,9 @@ class AnymalAStarWholeBody(AnymalAStar):
 
         print("[astar] Start generating Footholds...")
         # generate footholds on terrain considering gaits
+
+        
+
         for i, node in reversed(list(enumerate(optimalPath))):
             index = n-i-1
             self.footholds[index] = FootholdStatus()
@@ -68,7 +100,6 @@ class AnymalAStarWholeBody(AnymalAStar):
                     self.footholds[index].LH_pos = self.position_EE[2]
                     self.footholds[index].RH_pos = self.position_EE[3]
             else:
-                # pass
                 if self.footholds[index-1].leg_status == LegStatus.STAND_STILL:
                     self.footholds[index].leg_status = LegStatus.MAJOR_DIAGONAL
                     self.footholds[index].LF_pos , self.footholds[index].RH_pos = self.generate_footholds_for_major_diagonal_EEs(node)

@@ -109,13 +109,7 @@ class AnymalAStarRos(AnymalAStarWholeBody):
     def set_orientation_callback(self,data):
         self.torso_orientation = [data.quaternion.x,data.quaternion.y,data.quaternion.z,data.quaternion.w]
 
-    def calc_zmp(self):
-        contact_feet_position = []
-        for i,foot in enumerate(self.on_ground):
-            if foot:
-                contact_feet_position.append(self.position_EE[i])
-        self.zmp = np.mean(contact_feet_position,axis=0)
-        return self.zmp
+
 
     def run(self):
         self.set_start(tuple(self.calc_zmp()) + (self.mass_point_pos[0], self.mass_point_vel[0], self.mass_point_pos[1], self.mass_point_vel[1]))
@@ -340,7 +334,7 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
         loop_counter += 1
         astar.publish_whole_body_trajectory_reference()
-        if loop_counter % 400 == 0 and not t1.is_alive():
+        if not t1.is_alive():
             t1 = threading.Thread(target=astar.run)
             t1.start()
         r.sleep()
