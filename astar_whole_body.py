@@ -45,7 +45,7 @@ class AnymalAStarWholeBody(AnymalAStar):
 
         # This variable is used to indicate if ROS is used. If False, the first planned footholds will be generated
         # by default standing setup. Otherwise, the first footholds is the Anymal's current standing footholds
-        self.use_ros = False
+        self.use_ros = True
 
         self.trajectory_ready = False
 
@@ -99,6 +99,15 @@ class AnymalAStarWholeBody(AnymalAStar):
                     self.footholds[index].RF_pos = self.position_EE[1]
                     self.footholds[index].LH_pos = self.position_EE[2]
                     self.footholds[index].RH_pos = self.position_EE[3]
+                    if self.on_ground[0] == True and self.on_ground[1] == False:
+                        self.footholds[index].leg_status = LegStatus.MAJOR_DIAGONAL
+                    elif self.on_ground[1] == True and self.on_ground[0] == False:
+                        self.footholds[index].leg_status = LegStatus.MINOR_DIAGONAL
+                    elif self.on_ground[1] == True and self.on_ground[0] == True:
+                        self.footholds[index].leg_status = LegStatus.STAND_STILL
+                    else:
+                        print("[Error] [astar_whole_body::generate_EE_trajectory] Current standing status is wrong! ")
+
             else:
                 if self.footholds[index-1].leg_status == LegStatus.STAND_STILL:
                     self.footholds[index].leg_status = LegStatus.MAJOR_DIAGONAL
